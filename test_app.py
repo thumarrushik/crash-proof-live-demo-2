@@ -26,10 +26,10 @@ def test_version_returns_200():
 
 
 def test_version_returns_correct_version():
-    """GET /version returns {"version":"1.0.0"}."""
+    """GET /version returns {"version":"1.0.0", "commit":"dev"}."""
     client = TestClient(app)
     response = client.get("/version")
-    assert response.json() == {"version": "1.0.0"}
+    assert response.json() == {"version": "1.0.0", "commit": "dev"}
 
 
 def test_ping_returns_200():
