@@ -30,3 +30,17 @@ def test_version_returns_correct_version():
     client = TestClient(app)
     response = client.get("/version")
     assert response.json() == {"version": "1.0.0"}
+
+
+def test_ping_returns_200():
+    """GET /ping returns 200 status code."""
+    client = TestClient(app)
+    response = client.get("/ping")
+    assert response.status_code == 200
+
+
+def test_ping_returns_pong():
+    """GET /ping returns {"ping":"pong"}."""
+    client = TestClient(app)
+    response = client.get("/ping")
+    assert response.json() == {"ping": "pong"}

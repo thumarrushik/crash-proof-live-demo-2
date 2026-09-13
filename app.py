@@ -14,3 +14,9 @@ def health():
 def version():
     """Version endpoint."""
     return {"version": "1.0.0"}
+
+
+@app.get("/ping")
+def ping():
+    """Ping endpoint."""
+    return {"ping": "pong"}
