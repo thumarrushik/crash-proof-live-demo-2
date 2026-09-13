@@ -13,7 +13,7 @@ def health():
 @app.get("/version")
 def version():
     """Version endpoint."""
-    return {"version": "2.0.0", "build": "local", "commit": "dev"}
+    return {"version": "3.0.0", "build": "local", "commit": "dev"}
 
 
 @app.get("/ping")
