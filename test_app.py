@@ -16,3 +16,17 @@ def test_health_returns_ok_status():
     client = TestClient(app)
     response = client.get("/health")
     assert response.json() == {"status": "ok"}
+
+
+def test_version_returns_200():
+    """GET /version returns 200 status code."""
+    client = TestClient(app)
+    response = client.get("/version")
+    assert response.status_code == 200
+
+
+def test_version_returns_correct_version():
+    """GET /version returns {"version":"1.0.0"}."""
+    client = TestClient(app)
+    response = client.get("/version")
+    assert response.json() == {"version": "1.0.0"}
