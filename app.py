@@ -4,6 +4,9 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
+# App version string
+VERSION = "3.0.0"
+
 # Track process start time for uptime calculation
 _start_time = time.time()
 
@@ -12,13 +15,18 @@ _start_time = time.time()
 def health():
     """Health check endpoint."""
     uptime = time.time() - _start_time
-    return {"status": "ok", "uptime_seconds": uptime}
+    return {
+        "status": "ok",
+        "version": VERSION,
+        "service": "demo-api",
+        "uptime_seconds": uptime,
+    }
 
 
 @app.get("/version")
 def version():
     """Version endpoint."""
-    return {"version": "3.0.0", "build": "local", "commit": "dev"}
+    return {"version": VERSION, "build": "local", "commit": "dev"}
 
 
 @app.get("/ping")
