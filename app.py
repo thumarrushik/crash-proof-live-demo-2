@@ -1,4 +1,5 @@
 """Minimal FastAPI app with health check and version endpoints."""
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -24,12 +25,14 @@ def health():
     """Health check endpoint."""
     global _checks_passed
     _checks_passed += 1
+    env = os.getenv("APP_ENV", "dev")
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
     uptime = time.time() - _start_time
     return {
         "status": "ok",
         "started_at": STARTED_AT,
         "version": VERSION,
+        "env": env,
         "python": python_version,
         "uptime_seconds": uptime,
         "checks_passed": _checks_passed,

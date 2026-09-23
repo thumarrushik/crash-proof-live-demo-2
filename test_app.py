@@ -1,4 +1,5 @@
 """Tests for the FastAPI app."""
+import os
 from datetime import datetime
 
 import pytest
@@ -14,13 +15,51 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
-    """GET /health returns status ok with version and service."""
-    client = TestClient(app)
-    response = client.get("/health")
-    data = response.json()
-    assert data["status"] == "ok"
-    assert data["version"] == "3.0.0"
-    assert data["service"] == "demo-api"
+    """GET /health returns ok status with all fields including env and service."""
+    # Ensure APP_ENV is not set for this test to verify default
+    original_env = os.environ.pop("APP_ENV", None)
+    try:
+        client = TestClient(app)
+        response = client.get("/health")
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["version"] == "3.0.0"
+        assert data["env"] == "dev"
+        assert data["service"] == "demo-api"
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+
+
+def test_health_env_field_default_dev():
+    """GET /health returns env field with default value 'dev' when APP_ENV not set."""
+    original_env = os.environ.pop("APP_ENV", None)
+    try:
+        client = TestClient(app)
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert "env" in response.json()
+        assert response.json()["env"] == "dev"
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+
+
+def test_health_env_field_custom_value():
+    """GET /health returns env field with custom value from APP_ENV."""
+    original_env = os.environ.get("APP_ENV")
+    os.environ["APP_ENV"] = "production"
+    try:
+        client = TestClient(app)
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert "env" in response.json()
+        assert response.json()["env"] == "production"
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+        else:
+            os.environ.pop("APP_ENV", None)
 
 
 def test_health_started_at_is_valid_iso8601():
