@@ -2,45 +2,35 @@
 
 ## What was built
 
-Resolved merge conflict in PR #14 by merging origin/main into claude/issue-13 and reconciling all conflicts. The `/health` endpoint integrates all features from both branches: `uptime_seconds` (process uptime calculation from HEAD) and `started_at` (ISO-8601 UTC datetime from origin/main), plus `checks_passed` counter, `service` identifier, and `version`. All divergent changes preserved without clobbering either side; no conflict markers remain.
+Resolved merge conflict in PR #25 by merging origin/main into claude/issue-24 and reconciling all changes to the /health endpoint. The merged endpoint combines both branches' features: Python version reporting (major.minor) from claude/issue-24 and uptime tracking (started_at ISO-8601 UTC, uptime_seconds) from main. The response now returns seven fields: status, started_at, version, python, uptime_seconds, checks_passed, and service. All changes are additive and backward compatible.
 
 ## How it was verified
 
-Full test suite run on final merged state:
+**Test command:** `python -m pytest test_app.py -v`
 
+**Result:**
 ```
-python -m pytest test_app.py -v
-```
-
-Result:
-```
-test_app.py::test_health_returns_200 PASSED                              [  6%]
-test_app.py::test_health_returns_ok_status PASSED                        [ 13%]
-test_app.py::test_health_started_at_is_valid_iso8601 PASSED              [ 20%]
-test_app.py::test_health_returns_version_field PASSED                    [ 26%]
-test_app.py::test_health_includes_uptime_seconds PASSED                  [ 33%]
-test_app.py::test_health_uptime_seconds_is_non_negative PASSED           [ 40%]
-test_app.py::test_version_returns_200 PASSED                             [ 46%]
-test_app.py::test_version_returns_correct_version PASSED                 [ 53%]
-test_app.py::test_ping_returns_200 PASSED                                [ 60%]
-test_app.py::test_ping_returns_pong PASSED                               [ 66%]
-test_app.py::test_health_version_equals_version_endpoint PASSED          [ 73%]
-test_app.py::test_health_includes_checks_passed PASSED                   [ 80%]
-test_app.py::test_checks_passed_increments_across_calls PASSED           [ 86%]
-test_app.py::test_health_service_field_present PASSED                    [ 93%]
-test_app.py::test_health_service_field_equals_demo_api PASSED            [100%]
-
-======================== 15 passed, 1 warning in 0.43s =========================
+======================== 16 passed, 1 warning in 0.43s =========================
 ```
 
-Exit code: 0. All 15 contract-level tests pass, validating the merged endpoint behavior: ISO-8601 datetime format, uptime calculation, counter incrementing, service identifier, and all existing endpoint contracts. No failures, no errors, no skipped tests.
+Exit code: 0. All 16 contract-level tests pass, validating the merged endpoint behavior:
+- Python version field correctly reports running interpreter (major.minor)
+- started_at field parses as valid ISO-8601 UTC datetime
+- uptime_seconds field is non-negative and tracks process uptime
+- checks_passed counter increments across calls
+- service field correctly returns "demo-api"
+- version field matches version endpoint
+- All three endpoints (/health, /version, /ping) functional
+
+Self-review hunts completed: no callers broken, no error paths with exceptions, no N+1 queries, no debug code, no TODOs, no untracked files.
 
 ## Files
 
-- `app.py` — Modified: integrated both branches' changes into `/health` endpoint; added `time` import for uptime tracking; returns all six fields (status, started_at, version, uptime_seconds, checks_passed, service)
-- `test_app.py` — Modified: combined all contract-level tests from both branches; validates both uptime and ISO-8601 features
-- `REPORT.md` — Modified: documented merge resolution with exact verification commands
+- app.py (modified)
+- test_app.py (modified)
+- test_output.txt (modified)
+- REPORT.md (modified)
 
 ## Noticed, not changed
 
-None. Merge resolution minimal and complete; all divergent changes integrated.
+No issues found. Both branches' features integrate cleanly in the merged /health endpoint with no conflicts between python version calculation and uptime tracking.

@@ -104,6 +104,15 @@ def test_health_version_equals_version_endpoint():
     assert health_response.json()["version"] == version_response.json()["version"]
 
 
+def test_health_reports_running_python():
+    """GET /health.python reports the actual running Python major.minor version."""
+    import sys
+    client = TestClient(app)
+    response = client.get("/health")
+    expected = f"{sys.version_info.major}.{sys.version_info.minor}"
+    assert response.json()["python"] == expected
+
+
 def test_health_includes_checks_passed():
     """GET /health includes checks_passed field."""
     client = TestClient(app)
