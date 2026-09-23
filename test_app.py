@@ -333,3 +333,77 @@ def test_livez_readyz_health_service_consistent():
     assert livez_response.json()["service"] == "demo-api"
     assert readyz_response.json()["service"] == "demo-api"
     assert health_response.json()["service"] == "demo-api"
+
+
+# Response time verification tests
+def test_livez_response_time_sla():
+    """GET /livez response time is <100ms P50, <200ms P99 (SLA verification)."""
+    import statistics
+    import time
+
+    client = TestClient(app)
+    times_ms = []
+
+    # Take 100 samples to get P50 and P99
+    for _ in range(100):
+        start = time.perf_counter_ns()
+        response = client.get("/livez")
+        elapsed_ns = time.perf_counter_ns() - start
+        elapsed_ms = elapsed_ns / 1_000_000
+        times_ms.append(elapsed_ms)
+        assert response.status_code == 200
+
+    p50 = statistics.quantiles(times_ms, n=2)[0]  # 50th percentile
+    p99 = max(times_ms)  # worst case (approximates P99 with 100 samples)
+
+    # SLA targets: <100ms P50, <200ms P99
+    assert p50 < 100, f"P50 latency {p50:.2f}ms exceeds SLA of 100ms"
+    assert p99 < 200, f"P99 latency {p99:.2f}ms exceeds SLA of 200ms"
+
+
+def test_readyz_response_time_sla():
+    """GET /readyz response time is <200ms P50, <500ms P99 (SLA verification)."""
+    import statistics
+    import time
+
+    client = TestClient(app)
+    times_ms = []
+
+    for _ in range(100):
+        start = time.perf_counter_ns()
+        response = client.get("/readyz")
+        elapsed_ns = time.perf_counter_ns() - start
+        elapsed_ms = elapsed_ns / 1_000_000
+        times_ms.append(elapsed_ms)
+        assert response.status_code == 200
+
+    p50 = statistics.quantiles(times_ms, n=2)[0]
+    p99 = max(times_ms)
+
+    # SLA targets: <200ms P50, <500ms P99
+    assert p50 < 200, f"P50 latency {p50:.2f}ms exceeds SLA of 200ms"
+    assert p99 < 500, f"P99 latency {p99:.2f}ms exceeds SLA of 500ms"
+
+
+def test_health_response_time_sla():
+    """GET /health response time is <200ms P50, <500ms P99 (SLA verification)."""
+    import statistics
+    import time
+
+    client = TestClient(app)
+    times_ms = []
+
+    for _ in range(100):
+        start = time.perf_counter_ns()
+        response = client.get("/health")
+        elapsed_ns = time.perf_counter_ns() - start
+        elapsed_ms = elapsed_ns / 1_000_000
+        times_ms.append(elapsed_ms)
+        assert response.status_code == 200
+
+    p50 = statistics.quantiles(times_ms, n=2)[0]
+    p99 = max(times_ms)
+
+    # SLA targets: <200ms P50, <500ms P99
+    assert p50 < 200, f"P50 latency {p50:.2f}ms exceeds SLA of 200ms"
+    assert p99 < 500, f"P99 latency {p99:.2f}ms exceeds SLA of 500ms"
