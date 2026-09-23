@@ -81,9 +81,27 @@ def test_health_returns_version_field():
     """GET /health returns status=ok and version=3.0.0 fields."""
     client = TestClient(app)
     response = client.get("/health")
-    body = response.json()
-    assert body["status"] == "ok"
-    assert body["version"] == "3.0.0"
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_health_includes_uptime_seconds():
+    """GET /health includes uptime_seconds field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert "uptime_seconds" in data
+
+
+def test_health_uptime_seconds_is_non_negative():
+    """GET /health uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
 
 
 def test_version_returns_200():
