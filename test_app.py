@@ -12,10 +12,10 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
-    """GET /health returns {"status":"ok"}."""
+    """GET /health returns {"status":"ok", "version":"3.0.0"}."""
     client = TestClient(app)
     response = client.get("/health")
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "version": "3.0.0"}
 
 
 def test_version_returns_200():
@@ -44,3 +44,14 @@ def test_ping_returns_pong():
     client = TestClient(app)
     response = client.get("/ping")
     assert response.json() == {"ping": "pong"}
+
+
+def test_health_version_equals_version_endpoint():
+    """GET /health.version equals GET /version.version."""
+    client = TestClient(app)
+    health_response = client.get("/health")
+    version_response = client.get("/version")
+
+    assert health_response.status_code == 200
+    assert version_response.status_code == 200
+    assert health_response.json()["version"] == version_response.json()["version"]
