@@ -6,11 +6,16 @@ app = FastAPI()
 # App version string
 VERSION = "3.0.0"
 
+# Counter for health checks served since process start
+_checks_passed = 0
+
 
 @app.get("/health")
 def health():
     """Health check endpoint."""
-    return {"status": "ok", "version": VERSION, "service": "demo-api"}
+    global _checks_passed
+    _checks_passed += 1
+    return {"status": "ok", "version": VERSION, "checks_passed": _checks_passed, "service": "demo-api"}
 
 
 @app.get("/version")
