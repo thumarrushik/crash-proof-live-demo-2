@@ -15,7 +15,7 @@ def health():
     """Health check endpoint."""
     global _checks_passed
     _checks_passed += 1
-    return {"status": "ok", "version": VERSION, "checks_passed": _checks_passed}
+    return {"status": "ok", "version": VERSION, "checks_passed": _checks_passed, "service": "demo-api"}
 
 
 @app.get("/version")

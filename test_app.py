@@ -80,3 +80,17 @@ def test_checks_passed_increments_across_calls():
     response2 = client.get("/health")
     count2 = response2.json()["checks_passed"]
     assert count2 == count1 + 1  # Should increment by exactly 1
+
+
+def test_health_service_field_present():
+    """GET /health includes service field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "service" in response.json()
+
+
+def test_health_service_field_equals_demo_api():
+    """GET /health service field equals "demo-api"."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert response.json()["service"] == "demo-api"
