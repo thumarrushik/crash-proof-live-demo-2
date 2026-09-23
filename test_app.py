@@ -1,4 +1,6 @@
 """Tests for the FastAPI app."""
+from datetime import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 from app import app
@@ -12,12 +14,55 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
+    """GET /health returns status ok with version and service."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_health_started_at_is_valid_iso8601():
+    """GET /health started_at field parses as a valid ISO-8601 datetime."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    started_at = data["started_at"]
+
+    # Remove trailing 'Z' and parse as ISO-8601
+    iso_str = started_at.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+
+    # Verify it's a datetime object
+    assert isinstance(parsed_time, datetime)
+
+
+def test_health_returns_version_field():
     """GET /health returns status=ok and version=3.0.0 fields."""
     client = TestClient(app)
     response = client.get("/health")
-    body = response.json()
-    assert body["status"] == "ok"
-    assert body["version"] == "3.0.0"
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_health_includes_uptime_seconds():
+    """GET /health includes uptime_seconds field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert "uptime_seconds" in data
+
+
+def test_health_uptime_seconds_is_non_negative():
+    """GET /health uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
 
 
 def test_version_returns_200():
