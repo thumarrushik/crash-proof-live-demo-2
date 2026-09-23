@@ -2,7 +2,11 @@
 
 ## What was built
 
-Resolved PR #26 merge conflict between `claude/issue-15` and `main` by combining both branches' endpoint features. The `/health` endpoint now returns five fields: `status`, `started_at` (ISO-8601 UTC datetime captured at process start), `version`, `checks_passed` (counter incremented per request), and `service` identifier. Both the started_at field from the branch and the counter-tracking from main are preserved. No functionality was removed; the resolution is purely additive.
+Resolved PR #26 merge conflict between `claude/issue-15` and `main`. The resolution combines features from both branches:
+- **From claude/issue-15**: `started_at` field (ISO-8601 UTC datetime captured at process start)
+- **From main (PR #27)**: `checks_passed` counter (incremented per request) and `service` identifier
+
+The `/health` endpoint now returns five fields: `status`, `started_at`, `version`, `checks_passed`, and `service`. Both branches' intents are preserved; no functionality was removed. The resolution is purely additive.
 
 ## How it was verified
 
@@ -32,13 +36,11 @@ All 13 tests pass:
 - test_health_service_field_present: ✓ Service field present
 - test_health_service_field_equals_demo_api: ✓ Service field set to "demo-api"
 
-Self-review hunts: All passed. No exception handling issues, no debug prints, no debug TODOs, no secrets in code or logs, no SQL injection, no code execution vulnerabilities, no authorization gaps.
-
 ## Files
 
-- app.py: Modified to combine both branches' features
-- test_app.py: Modified to include tests from both branches
-- REPORT.md: Created for this resolution
+- app.py: Modified to combine both branches' features (started_at, checks_passed, service)
+- test_app.py: Modified to include all tests from both branches
+- REPORT.md: Updated for this merge resolution
 
 ## Noticed, not changed
 
