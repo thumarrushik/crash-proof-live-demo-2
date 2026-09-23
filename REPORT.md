@@ -2,73 +2,44 @@
 
 ## What was built
 
-Resolved merge conflict between `claude/issue-18` and `main` branch by combining both feature sets into the health endpoint. The `/health` endpoint now returns four fields: `status` (ok), `version` (3.0.0), `checks_passed` (counter incremented per request), and `service` (demo-api). Both branches' features are preserved: the checks_passed counter from claude/issue-18 and the service field from main. The health endpoint successfully serves both capabilities without conflict or loss of functionality.
+Resolved PR #26 merge conflict between `claude/issue-15` and `main` by combining both branches' endpoint features. The `/health` endpoint now returns five fields: `status`, `started_at` (ISO-8601 UTC datetime captured at process start), `version`, `checks_passed` (counter incremented per request), and `service` identifier. Both the started_at field from the branch and the counter-tracking from main are preserved. No functionality was removed; the resolution is purely additive.
 
 ## How it was verified
 
-**Merge verification:**
-```bash
-git merge origin/main
+Full test suite run after merge resolution:
+
 ```
-Result: Automatic merge failed with conflicts in app.py and test_app.py, as expected.
-
-**Conflict resolution:**
-- Manually resolved app.py to combine both `checks_passed` increment and `service: "demo-api"` field
-- Manually resolved test_app.py to keep both test suites (checks_passed tests + service field tests)
-- Verified no conflict markers remain: `grep -n "<<<<<<\|======\|>>>>>>" app.py test_app.py` returned no results
-
-**Merge commit:**
-```bash
-git add app.py test_app.py && git commit -m "Reconcile: Merge main into claude/issue-18..."
-```
-Result: Commit 236f8d3 created successfully.
-
-**Full test suite run (final run):**
-```bash
 python -m pytest test_app.py -v
 ```
-Result:
-```
-test_app.py::test_health_returns_200 PASSED                              [  9%]
-test_app.py::test_health_returns_ok_status PASSED                        [ 18%]
-test_app.py::test_version_returns_200 PASSED                             [ 27%]
-test_app.py::test_version_returns_correct_version PASSED                 [ 36%]
-test_app.py::test_ping_returns_200 PASSED                                [ 45%]
-test_app.py::test_ping_returns_pong PASSED                               [ 54%]
-test_app.py::test_health_version_equals_version_endpoint PASSED          [ 63%]
-test_app.py::test_health_includes_checks_passed PASSED                   [ 72%]
-test_app.py::test_checks_passed_increments_across_calls PASSED           [ 81%]
-test_app.py::test_health_service_field_present PASSED                    [ 90%]
-test_app.py::test_health_service_field_equals_demo_api PASSED            [100%]
 
-======================== 11 passed, 1 warning in 0.60s =========================
+Output summary:
+```
+13 passed, 1 warning in 0.54s
 ```
 
-**Health endpoint verification (actual response):**
-```bash
-python -c "from fastapi.testclient import TestClient; from app import app; client = TestClient(app); response = client.get('/health'); print(response.json())"
-```
-Result: `{'status': 'ok', 'version': '3.0.0', 'checks_passed': 1, 'service': 'demo-api'}`
+All 13 tests pass:
+- test_health_returns_200: ✓ Health endpoint returns 200 status
+- test_health_returns_ok_status: ✓ Status field present and set to "ok"
+- test_health_started_at_is_valid_iso8601: ✓ started_at field parses as valid ISO-8601 datetime
+- test_health_returns_version_field: ✓ Version field present and set to "3.0.0"
+- test_version_returns_200: ✓ Version endpoint returns 200 status
+- test_version_returns_correct_version: ✓ Version endpoint returns correct schema
+- test_ping_returns_200: ✓ Ping endpoint returns 200 status
+- test_ping_returns_pong: ✓ Ping endpoint returns correct response
+- test_health_version_equals_version_endpoint: ✓ Health and version endpoints version match
+- test_health_includes_checks_passed: ✓ checks_passed field present
+- test_checks_passed_increments_across_calls: ✓ Counter increments correctly across two calls
+- test_health_service_field_present: ✓ Service field present
+- test_health_service_field_equals_demo_api: ✓ Service field set to "demo-api"
 
-**Self-review hunts (no issues found):**
-- Hunt 1 (Callers): Only test functions added; health endpoint response is additive and backward-compatible
-- Hunt 2 (Error paths): No error handling changes required
-- Hunt 3 (Query/perf): No N+1 queries, no loops with side effects
-- Hunt 4 (Tenant scope): N/A - public health check
-- Hunt 5 (Migrations): No schema changes required
-- Hunt 6 (Leftovers): No debug prints, TODOs, commented code, or scratch files
-
-**Security pass (no issues found):**
-- No input validation required (read-only endpoint)
-- No SQL injection, shell injection, or code injection risks
-- No authorization required (public endpoint)
-- No secrets in code or logs
+Self-review hunts: All passed. No exception handling issues, no debug prints, no debug TODOs, no secrets in code or logs, no SQL injection, no code execution vulnerabilities, no authorization gaps.
 
 ## Files
 
-- `app.py` — Modified: health endpoint now returns both checks_passed counter and service field
-- `test_app.py` — Modified: combined test suites verifying both checks_passed and service features
+- app.py: Modified to combine both branches' features
+- test_app.py: Modified to include tests from both branches
+- REPORT.md: Created for this resolution
 
 ## Noticed, not changed
 
-None. The resolution is minimal and focused on the merge conflict only.
+No issues detected requiring changes.
