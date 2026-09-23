@@ -55,3 +55,10 @@ def test_health_version_equals_version_endpoint():
     assert health_response.status_code == 200
     assert version_response.status_code == 200
     assert health_response.json()["version"] == version_response.json()["version"]
+
+
+def test_health_reports_running_python():
+    import sys
+    r = client.get("/health")
+    expected = f"{sys.version_info.major}.{sys.version_info.minor}"
+    assert r.json()["python"] == expected
