@@ -1,4 +1,5 @@
 """Minimal FastAPI app with health check and version endpoints."""
+import os
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -10,7 +11,8 @@ VERSION = "3.0.0"
 @app.get("/health")
 def health():
     """Health check endpoint."""
-    return {"status": "ok", "version": VERSION}
+    env = os.getenv("APP_ENV", "dev")
+    return {"status": "ok", "version": VERSION, "env": env}
 
 
 @app.get("/version")
