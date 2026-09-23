@@ -1,4 +1,5 @@
 """Minimal FastAPI app with health check and version endpoints."""
+import sys
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -10,7 +11,8 @@ VERSION = "3.0.0"
 @app.get("/health")
 def health():
     """Health check endpoint."""
-    return {"status": "ok", "version": VERSION, "python": "2.7"}
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    return {"status": "ok", "version": VERSION, "python": python_version}
 
 
 @app.get("/version")

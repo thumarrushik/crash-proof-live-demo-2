@@ -12,10 +12,16 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
-    """GET /health returns {"status":"ok", "version":"3.0.0"}."""
+    """GET /health returns {"status":"ok", "version":"3.0.0", "python":"X.Y"}."""
+    import sys
     client = TestClient(app)
     response = client.get("/health")
-    assert response.json() == {"status": "ok", "version": "3.0.0"}
+    expected_python = f"{sys.version_info.major}.{sys.version_info.minor}"
+    assert response.json() == {
+        "status": "ok",
+        "version": "3.0.0",
+        "python": expected_python,
+    }
 
 
 def test_version_returns_200():
@@ -58,7 +64,9 @@ def test_health_version_equals_version_endpoint():
 
 
 def test_health_reports_running_python():
+    """GET /health.python reports the actual running Python major.minor version."""
     import sys
-    r = client.get("/health")
+    client = TestClient(app)
+    response = client.get("/health")
     expected = f"{sys.version_info.major}.{sys.version_info.minor}"
-    assert r.json()["python"] == expected
+    assert response.json()["python"] == expected
