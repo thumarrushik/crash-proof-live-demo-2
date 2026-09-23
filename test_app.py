@@ -1,4 +1,6 @@
 """Tests for the FastAPI app."""
+from datetime import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 from app import app
@@ -12,6 +14,30 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
+    """GET /health returns status and started_at fields."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "started_at" in data
+
+
+def test_health_started_at_is_valid_iso8601():
+    """GET /health started_at field parses as a valid ISO-8601 datetime."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    started_at = data["started_at"]
+
+    # Remove trailing 'Z' and parse as ISO-8601
+    iso_str = started_at.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+
+    # Verify it's a datetime object
+    assert isinstance(parsed_time, datetime)
+
+
+def test_health_returns_version_field():
     """GET /health returns status=ok and version=3.0.0 fields."""
     client = TestClient(app)
     response = client.get("/health")
