@@ -2,36 +2,38 @@
 
 ## What was built
 
-Added an `env` field to the GET `/health` endpoint response that reads from the `APP_ENV` environment variable with a default value of `"dev"`. The response now returns `{"status": "ok", "version": "3.0.0", "env": "<value>"}`. This is an additive, backward-compatible change requiring no version bump.
+Resolved merge conflict in PR #23 (branch `claude/issue-22` vs `main`) by preserving both feature additions: the `env` field (from APP_ENV environment variable, defaults to "dev") and the `service` field (set to "demo-api"). The GET `/health` endpoint now returns both fields in a single additive change requiring no version bump.
 
 ## How it was verified
 
-**Test suite execution (final run after all edits):**
+**Command:**
 ```bash
 python -m pytest test_app.py -v
 ```
 
-**Result:**
+**Result (final run after merge resolution):**
 ```
-test_app.py::test_health_returns_200 PASSED                              [ 11%]
-test_app.py::test_health_returns_ok_status PASSED                        [ 22%]
-test_app.py::test_health_env_field_default_dev PASSED                    [ 33%]
-test_app.py::test_health_env_field_custom_value PASSED                   [ 44%]
-test_app.py::test_version_returns_200 PASSED                             [ 55%]
-test_app.py::test_version_returns_correct_version PASSED                 [ 66%]
-test_app.py::test_ping_returns_200 PASSED                               [ 77%]
-test_app.py::test_ping_returns_pong PASSED                               [ 88%]
-test_app.py::test_health_version_equals_version_endpoint PASSED          [100%]
+test_app.py::test_health_returns_200 PASSED                              [  9%]
+test_app.py::test_health_returns_ok_status PASSED                        [ 18%]
+test_app.py::test_health_env_field_default_dev PASSED                    [ 27%]
+test_app.py::test_health_env_field_custom_value PASSED                   [ 36%]
+test_app.py::test_version_returns_200 PASSED                             [ 45%]
+test_app.py::test_version_returns_correct_version PASSED                 [ 54%]
+test_app.py::test_ping_returns_200 PASSED                                [ 63%]
+test_app.py::test_ping_returns_pong PASSED                               [ 72%]
+test_app.py::test_health_version_equals_version_endpoint PASSED          [ 81%]
+test_app.py::test_health_service_field_present PASSED                    [ 90%]
+test_app.py::test_health_service_field_equals_demo_api PASSED            [100%]
 
-9 passed in 0.45s
+======================== 11 passed, 1 warning in 0.42s =========================
 ```
 
-All hunts passed: callers verified (additive field only), error paths safe (no exceptions), query/perf clear (no loops or N+1), tenant scope not applicable (public endpoint), migrations not applicable (no schema changes), security pass clean (no injection, no secrets).
+Full suite executed post-merge: 11 passed, 0 failed, 0 skipped. Security and quality hunts (tdd and self-review skills) passed with zero findings: no broken callers, no error-handling gaps, no injection vectors, no secrets, no N+1 patterns.
 
 ## Files
 
-- app.py: Added `import os`, modified `health()` function to read APP_ENV and include env field in response
-- test_app.py: Added `import os`, updated `test_health_returns_ok_status()` with new env field, added `test_health_env_field_default_dev()` and `test_health_env_field_custom_value()`
+- app.py
+- test_app.py
 
 ## Noticed, not changed
 
