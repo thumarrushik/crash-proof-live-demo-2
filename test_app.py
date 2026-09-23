@@ -12,16 +12,12 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
-    """GET /health returns {"status":"ok", "version":"3.0.0", "python":"X.Y"}."""
-    import sys
+    """GET /health returns status=ok and version=3.0.0 fields."""
     client = TestClient(app)
     response = client.get("/health")
-    expected_python = f"{sys.version_info.major}.{sys.version_info.minor}"
-    assert response.json() == {
-        "status": "ok",
-        "version": "3.0.0",
-        "python": expected_python,
-    }
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["version"] == "3.0.0"
 
 
 def test_version_returns_200():
@@ -70,3 +66,40 @@ def test_health_reports_running_python():
     response = client.get("/health")
     expected = f"{sys.version_info.major}.{sys.version_info.minor}"
     assert response.json()["python"] == expected
+
+
+def test_health_includes_checks_passed():
+    """GET /health includes checks_passed field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "checks_passed" in response.json()
+    assert isinstance(response.json()["checks_passed"], int)
+
+
+def test_checks_passed_increments_across_calls():
+    """checks_passed counter increments across two /health calls."""
+    client = TestClient(app)
+
+    # First call
+    response1 = client.get("/health")
+    count1 = response1.json()["checks_passed"]
+    assert count1 >= 1  # Should be at least 1
+
+    # Second call
+    response2 = client.get("/health")
+    count2 = response2.json()["checks_passed"]
+    assert count2 == count1 + 1  # Should increment by exactly 1
+
+
+def test_health_service_field_present():
+    """GET /health includes service field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "service" in response.json()
+
+
+def test_health_service_field_equals_demo_api():
+    """GET /health service field equals "demo-api"."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert response.json()["service"] == "demo-api"
