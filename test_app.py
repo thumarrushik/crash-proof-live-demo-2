@@ -12,10 +12,29 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
-    """GET /health returns {"status":"ok"}."""
+    """GET /health returns status ok and uptime_seconds."""
     client = TestClient(app)
     response = client.get("/health")
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "uptime_seconds" in data
+
+
+def test_health_includes_uptime_seconds():
+    """GET /health includes uptime_seconds field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert "uptime_seconds" in data
+
+
+def test_health_uptime_seconds_is_non_negative():
+    """GET /health uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
 
 
 def test_version_returns_200():
