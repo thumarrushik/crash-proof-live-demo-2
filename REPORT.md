@@ -2,17 +2,28 @@
 
 ## What was built
 
-Resolved merge conflict in PR #23 (branch `claude/issue-22` vs `main`) by preserving all feature additions from both branches. The `/health` endpoint now returns five fields: `status`, `version`, `env` (from APP_ENV with default "dev"), `checks_passed` (counter), and `service` ("demo-api"). App.py and test_app.py merged cleanly; only REPORT.md required manual conflict resolution. All code changes were already integrated; no new code written, only conflict markers removed.
+Resolved merge conflict in PR #23 (branch `claude/issue-22` vs `main`) by combining all feature additions from both branches. The resolution merges:
+- **PR #23 intent**: Adds `env` field to `/health` endpoint (from APP_ENV environment variable with default "dev")
+- **origin/main (PR #26)**: Includes `started_at` field (ISO-8601 UTC datetime at process start), `checks_passed` counter, and `service` identifier
+
+The `/health` endpoint now returns all six fields: `status`, `started_at`, `version`, `env`, `checks_passed`, and `service` ("demo-api"). Conflicts resolved in all three files (app.py, test_app.py, REPORT.md) by keeping both branches' features intact. Tests cover all six fields with 13 test cases.
 
 ## How it was verified
 
-**Merge completion:**
-Command: `git merge origin/main --no-commit --no-ff` (performed in Reconcile phase)
-Result: Merge required conflict resolution in REPORT.md only; app.py and test_app.py merged cleanly without conflicts.
+**Merge command:**
+```
+git merge origin/main --no-commit --no-ff
+```
+Result: Automatic merge failed with conflicts in app.py, test_app.py, and REPORT.md.
 
-**Conflict resolution verification:**
-Command: `grep -n "<<<<<<\|======\|>>>>>>" REPORT.md app.py test_app.py`
-Result: ✓ No conflict markers found after manual resolution.
+**Conflict resolution:**
+- app.py: Merged both imports (`import os` for env field, `from datetime import ...` for started_at) and combined return statement with all six fields
+- test_app.py: Kept both env tests (test_health_env_field_default_dev, test_health_env_field_custom_value) and started_at tests (test_health_started_at_is_valid_iso8601, test_health_returns_version_field)
+- REPORT.md: Merged documentation to reflect combined resolution
+
+**Conflict verification:**
+Command: `grep -n "<<<<<<\|======\|>>>>>>" app.py test_app.py REPORT.md`
+Result: ✓ No conflict markers remain after resolution.
 
 **Full test suite (final run):**
 Command: `python -m pytest test_app.py -v`
@@ -34,13 +45,15 @@ test_health_service_field_equals_demo_api PASSED            [100%]
 
 13 passed, 1 warning in 0.46s
 ```
-Exit code: 0 (success). Tests verify all three integrated features (env, checks_passed, service) and all existing endpoints.
+
+Exit code: 0 (success). All 13 tests pass, verifying all six endpoint fields work correctly.
 
 ## Files
 
-- `REPORT.md` — Modified: merged conflict resolution documentation from both PR #23 and origin/main perspectives
+- app.py (modified) — Merged both branches: added `os` import for env field, kept `datetime` import for started_at, combined health endpoint to return all six fields
+- test_app.py (modified) — Merged both test suites: kept env field tests and started_at field tests; 13 tests total
+- REPORT.md (modified) — Merged conflict documentation; unified record of PR #23 + origin/main resolution
 
 ## Noticed, not changed
 
-- `app.py` — No changes in this run; already had all three features integrated and code is correct
-- `test_app.py` — No changes in this run; already had all 13 tests covering all features
+None.
