@@ -77,6 +77,29 @@ def test_health_version_equals_version_endpoint():
     assert health_response.json()["version"] == version_response.json()["version"]
 
 
+def test_health_includes_checks_passed():
+    """GET /health includes checks_passed field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "checks_passed" in response.json()
+    assert isinstance(response.json()["checks_passed"], int)
+
+
+def test_checks_passed_increments_across_calls():
+    """checks_passed counter increments across two /health calls."""
+    client = TestClient(app)
+
+    # First call
+    response1 = client.get("/health")
+    count1 = response1.json()["checks_passed"]
+    assert count1 >= 1  # Should be at least 1
+
+    # Second call
+    response2 = client.get("/health")
+    count2 = response2.json()["checks_passed"]
+    assert count2 == count1 + 1  # Should increment by exactly 1
+
+
 def test_health_service_field_present():
     """GET /health includes service field."""
     client = TestClient(app)

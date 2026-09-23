@@ -10,16 +10,22 @@ VERSION = "3.0.0"
 # Track process start time for uptime calculation
 _start_time = time.time()
 
+# Counter for health checks served since process start
+_checks_passed = 0
+
 
 @app.get("/health")
 def health():
     """Health check endpoint."""
+    global _checks_passed
+    _checks_passed += 1
     uptime = time.time() - _start_time
     return {
         "status": "ok",
         "version": VERSION,
         "service": "demo-api",
         "uptime_seconds": uptime,
+        "checks_passed": _checks_passed,
     }
 
 
