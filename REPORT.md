@@ -6,7 +6,7 @@ Resolved merge conflict in PR #23 (branch `claude/issue-22` vs `main`) by combin
 - **PR #23 intent**: Adds `env` field to `/health` endpoint (from APP_ENV environment variable with default "dev")
 - **origin/main (PR #26)**: Includes `started_at` field (ISO-8601 UTC datetime at process start), `checks_passed` counter, and `service` identifier
 
-The `/health` endpoint now returns all six fields: `status`, `started_at`, `version`, `env`, `checks_passed`, and `service` ("demo-api"). Conflicts resolved in all three files (app.py, test_app.py, REPORT.md) by keeping both branches' features intact. Tests cover all six fields with 13 test cases.
+The `/health` endpoint now returns all six fields: `status`, `started_at`, `version`, `env`, `checks_passed`, and `service` ("demo-api"). Conflicts resolved in all three files (app.py, test_app.py, REPORT.md) by keeping both branches' features intact. Tests cover all six fields with 15 test cases total.
 
 ## How it was verified
 
@@ -29,29 +29,31 @@ Result: ✓ No conflict markers remain after resolution.
 Command: `python -m pytest test_app.py -v`
 Result:
 ```
-test_health_returns_200 PASSED                              [  7%]
-test_health_returns_ok_status PASSED                        [ 15%]
-test_health_env_field_default_dev PASSED                    [ 23%]
-test_health_env_field_custom_value PASSED                   [ 30%]
-test_version_returns_200 PASSED                             [ 38%]
-test_version_returns_correct_version PASSED                 [ 46%]
-test_ping_returns_200 PASSED                                [ 53%]
-test_ping_returns_pong PASSED                               [ 61%]
-test_health_version_equals_version_endpoint PASSED          [ 69%]
-test_health_includes_checks_passed PASSED                   [ 76%]
-test_checks_passed_increments_across_calls PASSED           [ 84%]
-test_health_service_field_present PASSED                    [ 92%]
-test_health_service_field_equals_demo_api PASSED            [100%]
+test_app.py::test_health_returns_200 PASSED                              [  6%]
+test_app.py::test_health_returns_ok_status PASSED                        [ 13%]
+test_app.py::test_health_env_field_default_dev PASSED                    [ 20%]
+test_app.py::test_health_env_field_custom_value PASSED                   [ 26%]
+test_app.py::test_health_started_at_is_valid_iso8601 PASSED              [ 33%]
+test_app.py::test_health_returns_version_field PASSED                    [ 40%]
+test_app.py::test_version_returns_200 PASSED                             [ 46%]
+test_app.py::test_version_returns_correct_version PASSED                 [ 53%]
+test_app.py::test_ping_returns_200 PASSED                                [ 60%]
+test_app.py::test_ping_returns_pong PASSED                               [ 66%]
+test_app.py::test_health_version_equals_version_endpoint PASSED          [ 73%]
+test_app.py::test_health_includes_checks_passed PASSED                   [ 80%]
+test_app.py::test_checks_passed_increments_across_calls PASSED           [ 86%]
+test_app.py::test_health_service_field_present PASSED                    [ 93%]
+test_app.py::test_health_service_field_equals_demo_api PASSED            [100%]
 
-13 passed, 1 warning in 0.46s
+15 passed, 1 warning in 0.50s
 ```
 
-Exit code: 0 (success). All 13 tests pass, verifying all six endpoint fields work correctly.
+Exit code: 0 (success). All 15 tests pass, verifying all six endpoint fields and their complete integration work correctly.
 
 ## Files
 
 - app.py (modified) — Merged both branches: added `os` import for env field, kept `datetime` import for started_at, combined health endpoint to return all six fields
-- test_app.py (modified) — Merged both test suites: kept env field tests and started_at field tests; 13 tests total
+- test_app.py (modified) — Merged both test suites: kept env field tests and started_at field tests; 15 tests total covering all endpoints and field variations
 - REPORT.md (modified) — Merged conflict documentation; unified record of PR #23 + origin/main resolution
 
 ## Noticed, not changed
