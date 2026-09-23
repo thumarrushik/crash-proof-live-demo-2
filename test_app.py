@@ -13,6 +13,7 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
+<<<<<<< HEAD
     """GET /health returns {"status":"ok", "version":"3.0.0", "env":"dev"}."""
     # Ensure APP_ENV is not set for this test to verify default
     original_env = os.environ.pop("APP_ENV", None)
@@ -54,6 +55,12 @@ def test_health_env_field_custom_value():
             os.environ["APP_ENV"] = original_env
         else:
             os.environ.pop("APP_ENV", None)
+=======
+    """GET /health returns {"status":"ok", "version":"3.0.0", "service":"demo-api"}."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert response.json() == {"status": "ok", "version": "3.0.0", "service": "demo-api"}
+>>>>>>> origin/main
 
 
 def test_version_returns_200():
@@ -93,3 +100,17 @@ def test_health_version_equals_version_endpoint():
     assert health_response.status_code == 200
     assert version_response.status_code == 200
     assert health_response.json()["version"] == version_response.json()["version"]
+
+
+def test_health_service_field_present():
+    """GET /health includes service field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "service" in response.json()
+
+
+def test_health_service_field_equals_demo_api():
+    """GET /health service field equals "demo-api"."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert response.json()["service"] == "demo-api"
