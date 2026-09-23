@@ -1,8 +1,12 @@
 """Minimal FastAPI app with health check and version endpoints."""
 import time
+from datetime import datetime, timezone
 from fastapi import FastAPI
 
 app = FastAPI()
+
+# Capture the process start time in ISO-8601 UTC format
+STARTED_AT = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 # App version string
 VERSION = "3.0.0"
@@ -22,10 +26,11 @@ def health():
     uptime = time.time() - _start_time
     return {
         "status": "ok",
+        "started_at": STARTED_AT,
         "version": VERSION,
-        "service": "demo-api",
         "uptime_seconds": uptime,
         "checks_passed": _checks_passed,
+        "service": "demo-api"
     }
 
 
