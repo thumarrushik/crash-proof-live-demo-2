@@ -11,12 +11,8 @@ VERSION = "3.0.0"
 @app.get("/health")
 def health():
     """Health check endpoint."""
-<<<<<<< HEAD
     env = os.getenv("APP_ENV", "dev")
-    return {"status": "ok", "version": VERSION, "env": env}
-=======
-    return {"status": "ok", "version": VERSION, "service": "demo-api"}
->>>>>>> origin/main
+    return {"status": "ok", "version": VERSION, "env": env, "service": "demo-api"}
 
 
 @app.get("/version")

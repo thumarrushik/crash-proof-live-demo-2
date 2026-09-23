@@ -13,14 +13,17 @@ def test_health_returns_200():
 
 
 def test_health_returns_ok_status():
-<<<<<<< HEAD
-    """GET /health returns {"status":"ok", "version":"3.0.0", "env":"dev"}."""
+    """GET /health returns ok status with all fields including env and service."""
     # Ensure APP_ENV is not set for this test to verify default
     original_env = os.environ.pop("APP_ENV", None)
     try:
         client = TestClient(app)
         response = client.get("/health")
-        assert response.json() == {"status": "ok", "version": "3.0.0", "env": "dev"}
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["version"] == "3.0.0"
+        assert data["env"] == "dev"
+        assert data["service"] == "demo-api"
     finally:
         if original_env is not None:
             os.environ["APP_ENV"] = original_env
@@ -55,12 +58,6 @@ def test_health_env_field_custom_value():
             os.environ["APP_ENV"] = original_env
         else:
             os.environ.pop("APP_ENV", None)
-=======
-    """GET /health returns {"status":"ok", "version":"3.0.0", "service":"demo-api"}."""
-    client = TestClient(app)
-    response = client.get("/health")
-    assert response.json() == {"status": "ok", "version": "3.0.0", "service": "demo-api"}
->>>>>>> origin/main
 
 
 def test_version_returns_200():
