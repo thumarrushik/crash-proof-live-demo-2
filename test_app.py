@@ -187,3 +187,149 @@ def test_health_service_field_equals_demo_api():
     client = TestClient(app)
     response = client.get("/health")
     assert response.json()["service"] == "demo-api"
+
+
+# Tests for /livez (liveness probe)
+def test_livez_returns_200():
+    """GET /livez returns 200 status code (process is alive)."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    assert response.status_code == 200
+
+
+def test_livez_returns_ok_status():
+    """GET /livez returns ok status with health data."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_livez_includes_comprehensive_data():
+    """GET /livez includes version, env, python, uptime, checks_passed (alias pattern)."""
+    original_env = os.environ.pop("APP_ENV", None)
+    try:
+        client = TestClient(app)
+        response = client.get("/livez")
+        data = response.json()
+        assert "status" in data
+        assert "version" in data
+        assert "env" in data
+        assert "python" in data
+        assert "uptime_seconds" in data
+        assert "checks_passed" in data
+        assert "service" in data
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+
+
+def test_livez_started_at_is_valid_iso8601():
+    """GET /livez started_at field is valid ISO-8601."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    data = response.json()
+    started_at = data["started_at"]
+    iso_str = started_at.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+    assert isinstance(parsed_time, datetime)
+
+
+def test_livez_uptime_seconds_is_non_negative():
+    """GET /livez uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
+
+
+# Tests for /readyz (readiness probe)
+def test_readyz_returns_200():
+    """GET /readyz returns 200 status code when ready."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    assert response.status_code == 200
+
+
+def test_readyz_returns_ok_status_when_ready():
+    """GET /readyz returns ok status when service is ready."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_readyz_includes_comprehensive_data():
+    """GET /readyz includes version, env, python, uptime, checks_passed (alias pattern)."""
+    original_env = os.environ.pop("APP_ENV", None)
+    try:
+        client = TestClient(app)
+        response = client.get("/readyz")
+        data = response.json()
+        assert "status" in data
+        assert "version" in data
+        assert "env" in data
+        assert "python" in data
+        assert "uptime_seconds" in data
+        assert "checks_passed" in data
+        assert "service" in data
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+
+
+def test_readyz_started_at_is_valid_iso8601():
+    """GET /readyz started_at field is valid ISO-8601."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    data = response.json()
+    started_at = data["started_at"]
+    iso_str = started_at.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+    assert isinstance(parsed_time, datetime)
+
+
+def test_readyz_uptime_seconds_is_non_negative():
+    """GET /readyz uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
+
+
+def test_readyz_service_field_equals_demo_api():
+    """GET /readyz service field equals "demo-api"."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    assert response.json()["service"] == "demo-api"
+
+
+# Cross-endpoint consistency tests
+def test_livez_readyz_health_version_consistent():
+    """All three endpoints return the same version."""
+    client = TestClient(app)
+    livez_response = client.get("/livez")
+    readyz_response = client.get("/readyz")
+    health_response = client.get("/health")
+
+    assert livez_response.json()["version"] == "3.0.0"
+    assert readyz_response.json()["version"] == "3.0.0"
+    assert health_response.json()["version"] == "3.0.0"
+
+
+def test_livez_readyz_health_service_consistent():
+    """All three endpoints return the same service name."""
+    client = TestClient(app)
+    livez_response = client.get("/livez")
+    readyz_response = client.get("/readyz")
+    health_response = client.get("/health")
+
+    assert livez_response.json()["service"] == "demo-api"
+    assert readyz_response.json()["service"] == "demo-api"
+    assert health_response.json()["service"] == "demo-api"
