@@ -2,46 +2,43 @@
 
 ## What was built
 
-Resolved PR #26 merge conflict between `claude/issue-15` and `main`. The resolution combines features from both branches:
-- **From claude/issue-15**: `started_at` field (ISO-8601 UTC datetime captured at process start)
-- **From main (PR #27)**: `checks_passed` counter (incremented per request) and `service` identifier
-
-The `/health` endpoint now returns five fields: `status`, `started_at`, `version`, `checks_passed`, and `service`. Both branches' intents are preserved; no functionality was removed. The resolution is purely additive.
+Resolved PR #26 merge conflict between `claude/issue-15` and `main` by merging origin/main into the branch and combining conflicting REPORT.md sections. The resolution preserves both branches' endpoint features: the `started_at` field (ISO-8601 UTC datetime captured at process start) from claude/issue-15 and the `checks_passed` counter plus `service` identifier from main. The `/health` endpoint now returns all five fields in a unified response with complete test coverage.
 
 ## How it was verified
 
-Full test suite run after merge resolution:
+Full test suite run on merged state:
 
 ```
 python -m pytest test_app.py -v
 ```
 
-Output summary:
+Result (final run):
 ```
-13 passed, 1 warning in 0.54s
+test_app.py::test_health_returns_200 PASSED                              [  7%]
+test_app.py::test_health_returns_ok_status PASSED                        [ 15%]
+test_app.py::test_health_started_at_is_valid_iso8601 PASSED              [ 23%]
+test_app.py::test_health_returns_version_field PASSED                    [ 30%]
+test_app.py::test_version_returns_200 PASSED                             [ 38%]
+test_app.py::test_version_returns_correct_version PASSED                 [ 46%]
+test_app.py::test_ping_returns_200 PASSED                                [ 53%]
+test_app.py::test_ping_returns_pong PASSED                               [ 61%]
+test_app.py::test_health_version_equals_version_endpoint PASSED          [ 69%]
+test_app.py::test_health_includes_checks_passed PASSED                   [ 76%]
+test_app.py::test_checks_passed_increments_across_calls PASSED           [ 84%]
+test_app.py::test_health_service_field_present PASSED                    [ 92%]
+test_app.py::test_health_service_field_equals_demo_api PASSED            [100%]
+
+13 passed, 1 warning in 0.48s
 ```
 
-All 13 tests pass:
-- test_health_returns_200: ✓ Health endpoint returns 200 status
-- test_health_returns_ok_status: ✓ Status field present and set to "ok"
-- test_health_started_at_is_valid_iso8601: ✓ started_at field parses as valid ISO-8601 datetime
-- test_health_returns_version_field: ✓ Version field present and set to "3.0.0"
-- test_version_returns_200: ✓ Version endpoint returns 200 status
-- test_version_returns_correct_version: ✓ Version endpoint returns correct schema
-- test_ping_returns_200: ✓ Ping endpoint returns 200 status
-- test_ping_returns_pong: ✓ Ping endpoint returns correct response
-- test_health_version_equals_version_endpoint: ✓ Health and version endpoints version match
-- test_health_includes_checks_passed: ✓ checks_passed field present
-- test_checks_passed_increments_across_calls: ✓ Counter increments correctly across two calls
-- test_health_service_field_present: ✓ Service field present
-- test_health_service_field_equals_demo_api: ✓ Service field set to "demo-api"
+Exit code: 0 (success). All 13 tests pass, verifying the merged endpoint behavior: ISO-8601 datetime format, counter incrementing, service identifier, and all existing endpoint contracts.
 
 ## Files
 
-- app.py: Modified to combine both branches' features (started_at, checks_passed, service)
-- test_app.py: Modified to include all tests from both branches
-- REPORT.md: Updated for this merge resolution
+- app.py (modified) — Added `started_at` constant and ISO-8601 UTC datetime import; health endpoint returns all five fields
+- test_app.py (modified) — Added ISO-8601 validation test; combined all tests from both branches
+- REPORT.md (modified) — Resolved merge conflict; unified documentation of both PRs' resolutions
 
 ## Noticed, not changed
 
-No issues detected requiring changes.
+None.
