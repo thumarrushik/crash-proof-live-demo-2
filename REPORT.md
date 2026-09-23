@@ -2,39 +2,37 @@
 
 ## What was built
 
-Resolved merge conflict in PR #23 (branch `claude/issue-22` vs `origin/main`) by combining both branches' features into the `/health` endpoint. The PR #23 branch adds an `env` field (extracted from APP_ENV environment variable with default "dev") and `python` field (Python version major.minor), while origin/main includes `uptime_seconds` (process uptime in seconds), `started_at` (ISO-8601 UTC datetime), `checks_passed` (counter incrementing per call), and `service` ("demo-api"). The resolution preserves all fields from both branches without conflict markers. The `/health` endpoint now returns nine fields: `status`, `started_at`, `version`, `env`, `python`, `uptime_seconds`, `checks_passed`, and `service`.
+Resolved merge conflict in PR #23 by merging origin/main into claude/issue-22 and reconciling all divergent changes to the `/health` endpoint. The branch adds `env` field (from APP_ENV environment variable, default "dev") and `python` field (major.minor version), while main contributes `uptime_seconds`, `started_at` (ISO-8601 UTC), `checks_passed`, and `service`. The merged endpoint now returns nine fields: status, started_at, version, env, python, uptime_seconds, checks_passed, and service. All conflict markers removed; both branches' features preserved without clobbering either side.
 
 ## How it was verified
 
-**Merge resolution verification:**
-All conflict markers removed from app.py and REPORT.md:
+**Merge conflict resolution:**
 ```
-grep -n "<<<<<<\|======\|>>>>>>" app.py REPORT.md 2>&1
+grep -n "^<<<<<<< HEAD\|^=======$\|^>>>>>>> origin/main" app.py REPORT.md 2>&1
 ```
-Result: No conflict markers found in code files.
+Result: No conflict markers found
 
-**Code review hunts (self-review skill):**
-- Hunt 1 (Callers): No changed function signatures; only new test functions added.
-- Hunt 2 (Error paths): No exception handling changes; no swallow patterns.
-- Hunt 3 (Query/perf): No loops, no unbounded queries in diff.
-- Hunt 4 (Tenant scope): No database queries in diff.
-- Hunt 5 (Migration): No schema changes in diff.
-- Hunt 6 (Leftovers): No debug prints, TODO comments, or commented-out code.
-- Security: No injection vectors, hardcoded secrets, or request logging.
-
-**Full test suite (final run):**
+**Contract-level test suite (final run after merge):**
 ```
 python -m pytest test_app.py -v
 ```
+Result:
+```
+======================== 18 passed, 1 warning in 0.40s =========================
+Exit code: 0
+```
 
-Exit code: 0. All tests pass, validating the merged endpoint behavior: status field, env field (default and custom values via APP_ENV), python field (major.minor), started_at ISO-8601 validation, version field, uptime_seconds non-negative float, checks_passed counter incrementing across calls, service field, /version endpoint, and /ping endpoint.
+All 18 contract-level tests pass, validating: env field with default/custom values via APP_ENV, python version reporting, started_at ISO-8601 UTC, uptime_seconds non-negative float, checks_passed counter increment, service field, /version endpoint, /ping endpoint, and endpoint version consistency.
+
+**Self-review hunts (all pass):**
+Hunt 1 (Callers): No function/route signature changes. Hunt 2 (Error paths): No exception handling patterns. Hunt 3 (Query/perf): No N+1 patterns, no unbounded reads. Hunt 4 (Tenant scope): No database queries. Hunt 5 (Migration): No schema changes. Hunt 6 (Leftovers): No debug prints, TODOs, or commented code. Security: No injection vectors (no SQL, shell, eval), no hardcoded secrets, input validation via os.getenv default.
 
 ## Files
 
-- app.py (modified) — Merged both branches: kept `import os` and added `import sys`, added env field extraction via `os.getenv("APP_ENV", "dev")` and python_version calculation via `sys.version_info`. All nine fields now in `/health` response.
-- test_app.py (modified) — Tests for all endpoint features including env field with environment variable isolation, python version validation, and all uptime/checks_passed features from origin/main.
-- REPORT.md (modified) — Updated with merge resolution details and test results.
+- app.py (modified)
+- test_app.py (modified)
+- REPORT.md (modified)
 
 ## Noticed, not changed
 
-None. Merge resolution minimal and complete; all divergent changes integrated; no scope creep.
+None. Merge resolution is minimal and complete; all changes are necessary for the conflict resolution.
