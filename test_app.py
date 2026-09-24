@@ -187,3 +187,223 @@ def test_health_service_field_equals_demo_api():
     client = TestClient(app)
     response = client.get("/health")
     assert response.json()["service"] == "demo-api"
+
+
+# Tests for /livez (liveness probe)
+def test_livez_returns_200():
+    """GET /livez returns 200 status code (process is alive)."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    assert response.status_code == 200
+
+
+def test_livez_returns_ok_status():
+    """GET /livez returns ok status with health data."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_livez_includes_comprehensive_data():
+    """GET /livez includes version, env, python, uptime, checks_passed (alias pattern)."""
+    original_env = os.environ.pop("APP_ENV", None)
+    try:
+        client = TestClient(app)
+        response = client.get("/livez")
+        data = response.json()
+        assert "status" in data
+        assert "version" in data
+        assert "env" in data
+        assert "python" in data
+        assert "uptime_seconds" in data
+        assert "checks_passed" in data
+        assert "service" in data
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+
+
+def test_livez_started_at_is_valid_iso8601():
+    """GET /livez started_at field is valid ISO-8601."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    data = response.json()
+    started_at = data["started_at"]
+    iso_str = started_at.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+    assert isinstance(parsed_time, datetime)
+
+
+def test_livez_uptime_seconds_is_non_negative():
+    """GET /livez uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/livez")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
+
+
+# Tests for /readyz (readiness probe)
+def test_readyz_returns_200():
+    """GET /readyz returns 200 status code when ready."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    assert response.status_code == 200
+
+
+def test_readyz_returns_ok_status_when_ready():
+    """GET /readyz returns ok status when service is ready."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "3.0.0"
+    assert data["service"] == "demo-api"
+
+
+def test_readyz_includes_comprehensive_data():
+    """GET /readyz includes version, env, python, uptime, checks_passed (alias pattern)."""
+    original_env = os.environ.pop("APP_ENV", None)
+    try:
+        client = TestClient(app)
+        response = client.get("/readyz")
+        data = response.json()
+        assert "status" in data
+        assert "version" in data
+        assert "env" in data
+        assert "python" in data
+        assert "uptime_seconds" in data
+        assert "checks_passed" in data
+        assert "service" in data
+    finally:
+        if original_env is not None:
+            os.environ["APP_ENV"] = original_env
+
+
+def test_readyz_started_at_is_valid_iso8601():
+    """GET /readyz started_at field is valid ISO-8601."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    data = response.json()
+    started_at = data["started_at"]
+    iso_str = started_at.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+    assert isinstance(parsed_time, datetime)
+
+
+def test_readyz_uptime_seconds_is_non_negative():
+    """GET /readyz uptime_seconds is a non-negative float."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    data = response.json()
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert data["uptime_seconds"] >= 0
+
+
+def test_readyz_service_field_equals_demo_api():
+    """GET /readyz service field equals "demo-api"."""
+    client = TestClient(app)
+    response = client.get("/readyz")
+    assert response.json()["service"] == "demo-api"
+
+
+# Cross-endpoint consistency tests
+def test_livez_readyz_health_version_consistent():
+    """All three endpoints return the same version."""
+    client = TestClient(app)
+    livez_response = client.get("/livez")
+    readyz_response = client.get("/readyz")
+    health_response = client.get("/health")
+
+    assert livez_response.json()["version"] == "3.0.0"
+    assert readyz_response.json()["version"] == "3.0.0"
+    assert health_response.json()["version"] == "3.0.0"
+
+
+def test_livez_readyz_health_service_consistent():
+    """All three endpoints return the same service name."""
+    client = TestClient(app)
+    livez_response = client.get("/livez")
+    readyz_response = client.get("/readyz")
+    health_response = client.get("/health")
+
+    assert livez_response.json()["service"] == "demo-api"
+    assert readyz_response.json()["service"] == "demo-api"
+    assert health_response.json()["service"] == "demo-api"
+
+
+# Response time verification tests
+def test_livez_response_time_sla():
+    """GET /livez response time is <100ms P50, <200ms P99 (SLA verification)."""
+    import statistics
+    import time
+
+    client = TestClient(app)
+    times_ms = []
+
+    # Take 100 samples to get P50 and P99
+    for _ in range(100):
+        start = time.perf_counter_ns()
+        response = client.get("/livez")
+        elapsed_ns = time.perf_counter_ns() - start
+        elapsed_ms = elapsed_ns / 1_000_000
+        times_ms.append(elapsed_ms)
+        assert response.status_code == 200
+
+    p50 = statistics.quantiles(times_ms, n=2)[0]  # 50th percentile
+    p99 = max(times_ms)  # worst case (approximates P99 with 100 samples)
+
+    # SLA targets: <100ms P50, <200ms P99
+    assert p50 < 100, f"P50 latency {p50:.2f}ms exceeds SLA of 100ms"
+    assert p99 < 200, f"P99 latency {p99:.2f}ms exceeds SLA of 200ms"
+
+
+def test_readyz_response_time_sla():
+    """GET /readyz response time is <200ms P50, <500ms P99 (SLA verification)."""
+    import statistics
+    import time
+
+    client = TestClient(app)
+    times_ms = []
+
+    for _ in range(100):
+        start = time.perf_counter_ns()
+        response = client.get("/readyz")
+        elapsed_ns = time.perf_counter_ns() - start
+        elapsed_ms = elapsed_ns / 1_000_000
+        times_ms.append(elapsed_ms)
+        assert response.status_code == 200
+
+    p50 = statistics.quantiles(times_ms, n=2)[0]
+    p99 = max(times_ms)
+
+    # SLA targets: <200ms P50, <500ms P99
+    assert p50 < 200, f"P50 latency {p50:.2f}ms exceeds SLA of 200ms"
+    assert p99 < 500, f"P99 latency {p99:.2f}ms exceeds SLA of 500ms"
+
+
+def test_health_response_time_sla():
+    """GET /health response time is <200ms P50, <500ms P99 (SLA verification)."""
+    import statistics
+    import time
+
+    client = TestClient(app)
+    times_ms = []
+
+    for _ in range(100):
+        start = time.perf_counter_ns()
+        response = client.get("/health")
+        elapsed_ns = time.perf_counter_ns() - start
+        elapsed_ms = elapsed_ns / 1_000_000
+        times_ms.append(elapsed_ms)
+        assert response.status_code == 200
+
+    p50 = statistics.quantiles(times_ms, n=2)[0]
+    p99 = max(times_ms)
+
+    # SLA targets: <200ms P50, <500ms P99
+    assert p50 < 200, f"P50 latency {p50:.2f}ms exceeds SLA of 200ms"
+    assert p99 < 500, f"P99 latency {p99:.2f}ms exceeds SLA of 500ms"
