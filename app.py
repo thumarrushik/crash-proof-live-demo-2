@@ -1,5 +1,6 @@
 """Minimal FastAPI app with health check and version endpoints."""
 import os
+import socket
 import sys
 import time
 from datetime import datetime, timezone
@@ -52,6 +53,7 @@ def _get_health_status():
         "uptime_seconds": uptime,
         "checks_passed": _checks_passed,
         "service": "demo-api",
+        "hostname": socket.gethostname(),
     }
 
 
