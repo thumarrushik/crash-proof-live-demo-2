@@ -216,14 +216,14 @@ def test_root_contains_health_element():
 # These tests enforce the contract: any field removal or type change fails loudly
 
 
-def test_health_response_has_required_seven_fields():
-    """GET /health response contains all 7 required fields: status, version, python, uptime_seconds, checks_passed, env, service."""
+def test_health_response_has_required_eight_fields():
+    """GET /health response contains all 8 required fields: status, version, python, uptime_seconds, checks_passed, env, service, hostname."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    # Verify all 7 required fields are present
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service"}
+    # Verify all 8 required fields are present
+    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname"}
     present_fields = set(data.keys())
 
     assert required_fields.issubset(present_fields), (
@@ -233,12 +233,12 @@ def test_health_response_has_required_seven_fields():
 
 
 def test_health_response_field_types():
-    """GET /health response has correct types for all 7 required fields."""
+    """GET /health response has correct types for all 8 required fields."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    # Type checks for all 7 required fields
+    # Type checks for all 8 required fields
     assert isinstance(data["status"], str), f"status must be str, got {type(data['status']).__name__}"
     assert isinstance(data["version"], str), f"version must be str, got {type(data['version']).__name__}"
     assert isinstance(data["python"], str), f"python must be str, got {type(data['python']).__name__}"
@@ -248,6 +248,7 @@ def test_health_response_field_types():
     assert isinstance(data["checks_passed"], int), f"checks_passed must be int, got {type(data['checks_passed']).__name__}"
     assert isinstance(data["env"], str), f"env must be str, got {type(data['env']).__name__}"
     assert isinstance(data["service"], str), f"service must be str, got {type(data['service']).__name__}"
+    assert isinstance(data["hostname"], str), f"hostname must be str, got {type(data['hostname']).__name__}"
 
 
 def test_health_status_field_is_exactly_ok():
@@ -363,13 +364,52 @@ def test_health_service_field_is_string_not_number():
     assert data["service"] == "demo-api"
 
 
+def test_health_includes_hostname_field():
+    """GET /health includes hostname field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "hostname" in response.json()
+
+
+def test_health_hostname_field_is_non_empty_string():
+    """GET /health hostname field is a non-empty string."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+
+    # Verify hostname is present
+    assert "hostname" in data, "hostname field must be present"
+
+    # Verify it's a string
+    assert isinstance(data["hostname"], str), (
+        f"hostname must be str, got {type(data['hostname']).__name__}"
+    )
+
+    # Verify it's non-empty
+    assert len(data["hostname"]) > 0, "hostname must be a non-empty string"
+    assert data["hostname"], "hostname must not be an empty string"
+
+
+def test_health_hostname_from_socket_gethostname():
+    """GET /health hostname matches socket.gethostname()."""
+    import socket
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+
+    expected_hostname = socket.gethostname()
+    assert data["hostname"] == expected_hostname, (
+        f"hostname should match socket.gethostname(): {data['hostname']} != {expected_hostname}"
+    )
+
+
 def test_health_required_fields_cannot_be_null():
     """GET /health required fields must not be None/null."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service"}
+    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname"}
     for field in required_fields:
         assert data[field] is not None, f"Required field '{field}' must not be null"
 
@@ -419,6 +459,11 @@ def test_health_response_complete_schema_validation():
     elif not isinstance(data["service"], str):
         schema_errors.append(f"Field 'service' has wrong type: {type(data['service']).__name__}, expected str")
 
+    if "hostname" not in data:
+        schema_errors.append("Missing field: hostname")
+    elif not isinstance(data["hostname"], str):
+        schema_errors.append(f"Field 'hostname' has wrong type: {type(data['hostname']).__name__}, expected str")
+
     # Assert no schema errors
     assert not schema_errors, (
         f"Schema validation failed with {len(schema_errors)} error(s):\n" +
@@ -438,9 +483,10 @@ def test_health_field_removal_status_would_fail():
         "checks_passed": 1,
         "env": "dev",
         "service": "demo-api",
+        "hostname": "test-host",
     }
 
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service"}
+    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname"}
     present_fields = set(test_data.keys())
     missing = required_fields - present_fields
 
@@ -480,7 +526,7 @@ def test_livez_returns_ok_status():
 
 
 def test_livez_includes_comprehensive_data():
-    """GET /livez includes version, env, python, uptime, checks_passed (alias pattern)."""
+    """GET /livez includes version, env, python, uptime, checks_passed, hostname (alias pattern)."""
     original_env = os.environ.pop("APP_ENV", None)
     try:
         client = TestClient(app)
@@ -493,6 +539,7 @@ def test_livez_includes_comprehensive_data():
         assert "uptime_seconds" in data
         assert "checks_passed" in data
         assert "service" in data
+        assert "hostname" in data
     finally:
         if original_env is not None:
             os.environ["APP_ENV"] = original_env
@@ -537,7 +584,7 @@ def test_readyz_returns_ok_status_when_ready():
 
 
 def test_readyz_includes_comprehensive_data():
-    """GET /readyz includes version, env, python, uptime, checks_passed (alias pattern)."""
+    """GET /readyz includes version, env, python, uptime, checks_passed, hostname (alias pattern)."""
     original_env = os.environ.pop("APP_ENV", None)
     try:
         client = TestClient(app)
@@ -550,6 +597,7 @@ def test_readyz_includes_comprehensive_data():
         assert "uptime_seconds" in data
         assert "checks_passed" in data
         assert "service" in data
+        assert "hostname" in data
     finally:
         if original_env is not None:
             os.environ["APP_ENV"] = original_env
@@ -605,6 +653,23 @@ def test_livez_readyz_health_service_consistent():
     assert livez_response.json()["service"] == "demo-api"
     assert readyz_response.json()["service"] == "demo-api"
     assert health_response.json()["service"] == "demo-api"
+
+
+def test_livez_readyz_health_hostname_consistent():
+    """All three endpoints return the same hostname."""
+    client = TestClient(app)
+    livez_response = client.get("/livez")
+    readyz_response = client.get("/readyz")
+    health_response = client.get("/health")
+
+    livez_hostname = livez_response.json()["hostname"]
+    readyz_hostname = readyz_response.json()["hostname"]
+    health_hostname = health_response.json()["hostname"]
+
+    assert livez_hostname == readyz_hostname == health_hostname, (
+        f"Hostnames should be consistent across endpoints: "
+        f"/livez={livez_hostname}, /readyz={readyz_hostname}, /health={health_hostname}"
+    )
 
 
 # Response time verification tests
