@@ -2,55 +2,46 @@
 
 ## What was built
 
-Resolved PR #29 merge conflict between `claude/issue-28` (GET / status page) and `main` (Kubernetes probes /livez, /readyz). The merged result provides:
-
-1. **Status page (GET /)** — Self-contained HTML with inline JavaScript that fetches and displays health data without build tooling, handles loading/success/error states
-2. **Kubernetes-idiomatic probes** — /livez (liveness) and /readyz (readiness) endpoints for orchestration platforms
-3. **Regression test suite** — 13 tests pinning the complete 7-field /health response contract to prevent accidental breaking changes
-4. **Full backward compatibility** — All three probe endpoints (/health, /livez, /readyz) share the common _get_health_status() implementation and return identical JSON payloads
+Resolved PR #29 merge conflict between `claude/issue-28` (GET / status page) and `main` (Kubernetes probes /livez, /readyz, regression tests). The merged result provides both features: a self-contained HTML status page (GET /), Kubernetes-idiomatic liveness and readiness probes (/livez, /readyz), and a comprehensive regression test suite pinning the /health endpoint's 7-field contract to prevent accidental breaking changes. All three probe endpoints share the common _get_health_status() implementation, return identical JSON payloads, and maintain full backward compatibility. Conflict resolution kept both test suites and features intact with zero test functionality lost.
 
 ## How it was verified
 
-### Merge conflict resolution
-**Command:** `git merge origin/main`
-**Result:** Auto-merge failed; 2 files in conflict (REPORT.md, test_app.py)
+**Merge command:**
+```bash
+git merge origin/main
+```
+Result: Auto-merge failed; 2 files in conflict (REPORT.md, test_app.py)
 
-**Command:** Manual conflict resolution — both branches' features merged intact
-**Result:** All conflicts marked resolved
+**Manual conflict resolution:** Resolved all conflicts by keeping both feature sets—GET / endpoint tests alongside /health regression tests, /livez liveness probe tests, /readyz readiness probe tests, consistency tests, and SLA verification tests.
 
-### Final verification run
-**Command:** `python -m pytest test_app.py -v --tb=short`
-**Result:** 47 tests passing
+**Test verification command:**
+```bash
+python -m pytest test_app.py -v
+```
 
-**Test breakdown:**
-- 18 original tests (backward compatibility for /health, /version, /ping endpoints)
-- 13 regression tests for /health 7-field contract pinning (status, version, python, uptime_seconds, checks_passed, env, service)
-- 3 tests for GET / endpoint (200 status, HTML content type, health element present)
-- 5 /livez liveness probe tests (status, comprehensive data, ISO8601 timestamp, uptime validation)
-- 6 /readyz readiness probe tests (status, comprehensive data, ISO8601 timestamp, uptime validation, service field consistency)
-- 2 cross-endpoint consistency tests (version and service name parity across /health, /livez, /readyz)
-- 3 SLA response time verification tests (<100ms P50 for /livez, <200ms P50 for /readyz and /health)
+Result:
+```
+======================== 50 passed, 3 warnings in 1.13s ========================
+```
 
-**Mutation audit discipline:**
-- Type validation: All 7 required fields type-checked to prevent silent regressions
-- Field presence: Hardcoded required field list with explicit missing-field detection
-- Independence proof: Verified tests pass in random order with no state pollution
-- Seen-red proof: All regression tests have documented failure paths from prior development
+Test breakdown (50 total):
+- 18 original endpoint tests (/health, /version, /ping, consistency)
+- 3 GET / status page tests
+- 13 /health regression tests (7-field contract enforcement)
+- 5 /livez liveness probe tests
+- 6 /readyz readiness probe tests
+- 2 cross-endpoint consistency tests (version, service)
+- 3 SLA response time verification tests
+
+All tests exit 0 with zero failures and zero errors.
 
 ## Files
 
-### Modified
-- `app.py` — Added Response and HTMLResponse imports; implemented /livez, /readyz, / endpoints; extracted _get_health_status() helper
-- `test_app.py` — Added 3 GET / tests, 13 regression tests for /health schema, 5 /livez tests, 6 /readyz tests, 2 consistency tests, 3 SLA tests
-- `REPORT.md` — Merged conflict report documenting both features and regression strategy
-
-### Created
-- `docs/BLUEPRINT-health-split.md` — Service blueprint with capacity analysis, measured response times
-- `docs/adr/0001-health-split.md` — Architecture decision record (Nygard format) for health probe split
-- `docs/adr/` — Directory for ADR namespace
+- `REPORT.md` — Modified: merged conflict documentation, unified both feature descriptions
+- `test_app.py` — Modified: kept all tests from both branches (3 GET /, 13 /health regression, 5 /livez, 6 /readyz, 2 consistency, 3 SLA)
+- `final_test_run.txt` — Created: test output capture from merge validation
+- `test_results.txt` — Deleted: superseded by final_test_run.txt
 
 ## Noticed, not changed
 
-- Deprecated `@app.on_event()` syntax: Acceptable for v3.1.0; upgrade path documented in ADR
-- Response payload size: All probes return full JSON (8 fields, ~200 bytes); trade-off documented in blueprint
-- `started_at` field: Present in app responses alongside 7-field regression contract; coexists without conflict
+Deprecated `@app.on_event()` syntax in app.py is acceptable for v3.1.0; upgrade path documented in docs/adr/0001-health-split.md and deferred to next major version.
