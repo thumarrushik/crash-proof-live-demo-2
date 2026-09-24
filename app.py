@@ -4,6 +4,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from fastapi import FastAPI, Response
+from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
@@ -105,3 +106,39 @@ def version():
 def ping():
     """Ping endpoint."""
     return {"ping": "pong"}
+
+
+@app.get("/", response_class=HTMLResponse)
+def root():
+    """Serve status page that fetches and displays /health data."""
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status</title>
+</head>
+<body>
+    <h1>Status</h1>
+    <div id="health">Loading...</div>
+    <script>
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                const list = document.createElement('ul');
+                Object.entries(data).forEach(([key, value]) => {
+                    const li = document.createElement('li');
+                    li.textContent = key + ': ' + value;
+                    list.appendChild(li);
+                });
+                const healthDiv = document.getElementById('health');
+                healthDiv.innerHTML = '';
+                healthDiv.appendChild(list);
+            })
+            .catch(error => {
+                document.getElementById('health').textContent = 'Error: ' + error.message;
+            });
+    </script>
+</body>
+</html>"""
+    return html

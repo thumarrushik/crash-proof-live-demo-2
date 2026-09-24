@@ -189,6 +189,29 @@ def test_health_service_field_equals_demo_api():
     assert response.json()["service"] == "demo-api"
 
 
+# Tests for GET / (status page)
+def test_root_returns_200():
+    """GET / returns 200 status code."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+
+
+def test_root_returns_html():
+    """GET / returns text/html content type."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert "text/html" in response.headers.get("content-type", "")
+
+
+def test_root_contains_health_element():
+    """GET / returns HTML containing element with id="health"."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'id="health"' in response.text
+
+
 # === REGRESSION TESTS: Pin the complete /health response shape ===
 # These tests enforce the contract: any field removal or type change fails loudly
 
