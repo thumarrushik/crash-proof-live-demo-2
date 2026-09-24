@@ -54,6 +54,7 @@ def _get_health_status():
         "checks_passed": _checks_passed,
         "service": "demo-api",
         "hostname": socket.gethostname(),
+        "pid": os.getpid(),
     }
 
 

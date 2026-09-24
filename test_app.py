@@ -216,14 +216,14 @@ def test_root_contains_health_element():
 # These tests enforce the contract: any field removal or type change fails loudly
 
 
-def test_health_response_has_required_eight_fields():
-    """GET /health response contains all 8 required fields: status, version, python, uptime_seconds, checks_passed, env, service, hostname."""
+def test_health_response_has_required_nine_fields():
+    """GET /health response contains all 9 required fields: status, version, python, uptime_seconds, checks_passed, env, service, hostname, pid."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    # Verify all 8 required fields are present
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname"}
+    # Verify all 9 required fields are present
+    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
     present_fields = set(data.keys())
 
     assert required_fields.issubset(present_fields), (
@@ -233,12 +233,12 @@ def test_health_response_has_required_eight_fields():
 
 
 def test_health_response_field_types():
-    """GET /health response has correct types for all 8 required fields."""
+    """GET /health response has correct types for all 9 required fields."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    # Type checks for all 8 required fields
+    # Type checks for all 9 required fields
     assert isinstance(data["status"], str), f"status must be str, got {type(data['status']).__name__}"
     assert isinstance(data["version"], str), f"version must be str, got {type(data['version']).__name__}"
     assert isinstance(data["python"], str), f"python must be str, got {type(data['python']).__name__}"
@@ -249,6 +249,7 @@ def test_health_response_field_types():
     assert isinstance(data["env"], str), f"env must be str, got {type(data['env']).__name__}"
     assert isinstance(data["service"], str), f"service must be str, got {type(data['service']).__name__}"
     assert isinstance(data["hostname"], str), f"hostname must be str, got {type(data['hostname']).__name__}"
+    assert isinstance(data["pid"], int), f"pid must be int, got {type(data['pid']).__name__}"
 
 
 def test_health_status_field_is_exactly_ok():
@@ -409,7 +410,7 @@ def test_health_required_fields_cannot_be_null():
     response = client.get("/health")
     data = response.json()
 
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname"}
+    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
     for field in required_fields:
         assert data[field] is not None, f"Required field '{field}' must not be null"
 
@@ -464,6 +465,11 @@ def test_health_response_complete_schema_validation():
     elif not isinstance(data["hostname"], str):
         schema_errors.append(f"Field 'hostname' has wrong type: {type(data['hostname']).__name__}, expected str")
 
+    if "pid" not in data:
+        schema_errors.append("Missing field: pid")
+    elif not isinstance(data["pid"], int):
+        schema_errors.append(f"Field 'pid' has wrong type: {type(data['pid']).__name__}, expected int")
+
     # Assert no schema errors
     assert not schema_errors, (
         f"Schema validation failed with {len(schema_errors)} error(s):\n" +
@@ -484,9 +490,10 @@ def test_health_field_removal_status_would_fail():
         "env": "dev",
         "service": "demo-api",
         "hostname": "test-host",
+        "pid": 12345,
     }
 
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname"}
+    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
     present_fields = set(test_data.keys())
     missing = required_fields - present_fields
 
@@ -744,3 +751,31 @@ def test_health_response_time_sla():
     # SLA targets: <200ms P50, <500ms P99
     assert p50 < 200, f"P50 latency {p50:.2f}ms exceeds SLA of 200ms"
     assert p99 < 500, f"P99 latency {p99:.2f}ms exceeds SLA of 500ms"
+
+
+# Tests for pid field
+def test_health_includes_pid_field():
+    """GET /health includes pid field."""
+    client = TestClient(app)
+    response = client.get("/health")
+    assert "pid" in response.json()
+
+
+def test_health_pid_is_positive_integer():
+    """GET /health pid field is a positive integer."""
+    client = TestClient(app)
+    response = client.get("/health")
+    data = response.json()
+
+    # Verify pid is present
+    assert "pid" in data, "pid field must be present in /health response"
+
+    # Verify pid is an integer
+    assert isinstance(data["pid"], int), (
+        f"pid field must be int, got {type(data['pid']).__name__}"
+    )
+
+    # Verify pid is a positive integer
+    assert data["pid"] > 0, (
+        f"pid must be a positive integer, got {data['pid']}"
+    )

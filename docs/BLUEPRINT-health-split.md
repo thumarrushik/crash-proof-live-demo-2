@@ -83,6 +83,8 @@ Today's `/health` endpoint serves both purposes simultaneously, which creates ti
 | Process uptime | `/health` (from app) | Operators, diagnostics | time.time() since startup |
 | Checks served count | `/health` (from app) | Operators, metrics | Global counter incremented per request |
 | Service name | `/health` (from app) | Operators, log aggregators | Hardcoded service constant |
+| Hostname | `/health` (from app) | Operators, logging, debugging | socket.gethostname() (runtime) |
+| Process ID | `/health` (from app) | Operators, logging, debugging | os.getpid() (runtime) |
 
 **No shared writers**: Each fact has exactly one endpoint responsible for its truth.  
 **No cross-endpoint reads**: `/livez` does not read state from `/readyz` or `/health`; each computes independently.
@@ -132,7 +134,9 @@ Today's `/health` endpoint serves both purposes simultaneously, which creates ti
   "python": "3.12",
   "uptime_seconds": 42.5,
   "checks_passed": 7,
-  "service": "demo-api"
+  "service": "demo-api",
+  "hostname": "pod-01",
+  "pid": 12345
 }
 ```
 
