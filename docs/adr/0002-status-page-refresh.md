@@ -98,15 +98,37 @@ Fetch /health (same as above)
 - Button and text reflow naturally
 - Timestamp inline with heading on desktop, wraps on mobile
 
-## Implementation Strategy
-1. Modify the HTML in `app.py` root() function
-2. Add JavaScript to handle:
-   - Initial fetch on page load
-   - Refresh button click handler
-   - Button disabled state management
-   - Timestamp formatting in local time or UTC
-   - Error display without clearing previous data
-3. No backend changes needed (existing `/health` endpoint is sufficient)
+## Implementation Details
+
+### Changes Made
+1. **Modified `app.py` root() function** to return enhanced HTML with:
+   - Semantic `<button>` element for refresh action
+   - Timestamp `<div>` (updates on each fetch)
+   - Error message area (red background, clear messaging)
+   - Health data `<div>` (preserves content on error)
+
+2. **Added inline CSS** with:
+   - Flexbox layout for header (button next to title)
+   - Minimal styling (gray button, red error box)
+   - Focus outline for accessibility (2px blue outline)
+   - Responsive design (wraps on small screens)
+   - Button disabled state (opacity reduced, cursor not-allowed)
+
+3. **Added JavaScript with**:
+   - `formatTimestamp()` function: Formats date as "Last checked: HH:MM:SS AM/PM on MM/DD/YYYY"
+   - `fetchHealthData()` function:
+     - Disables button and shows loading state
+     - Fetches `/health` endpoint
+     - Updates timestamp on success
+     - Displays health data as unordered list
+     - On error: shows NN/g error message (what + why + next action), preserves previous data
+     - Re-enables button in finally block
+   - Click handler on refresh button
+   - Auto-fetch on page load
+
+### No Backend Changes
+- Existing `/health` endpoint is sufficient
+- No new database, no new API endpoints needed
 
 ## Decisions
 - **Timestamp format**: Using browser locale time format (`toLocaleTimeString()` + `toLocaleDateString()` or just time for brevity)

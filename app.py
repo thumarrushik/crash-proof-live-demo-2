@@ -113,34 +113,171 @@ def ping():
 
 @app.get("/", response_class=HTMLResponse)
 def root():
-    """Serve status page that fetches and displays /health data."""
+    """Serve status page that fetches and displays /health data with refresh capability."""
     html = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Status</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #ccc;
+            background-color: #f5f5f5;
+            color: #333;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s, opacity 0.2s;
+            white-space: nowrap;
+        }
+        button:hover:not(:disabled) {
+            background-color: #e8e8e8;
+        }
+        button:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin: 0 0 16px 0;
+        }
+        .error {
+            color: #d32f2f;
+            margin: 0 0 16px 0;
+            padding: 8px;
+            background-color: #ffebee;
+            border-left: 4px solid #d32f2f;
+            border-radius: 2px;
+        }
+        .error:empty {
+            display: none;
+        }
+        #health {
+            margin-top: 16px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            padding: 4px 0;
+            word-break: break-word;
+        }
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Status</h1>
+    <div class="header">
+        <h1>Status</h1>
+        <button id="refresh-btn">Refresh</button>
+    </div>
+    <div class="timestamp" id="timestamp"></div>
+    <div class="error" id="error"></div>
     <div id="health">Loading...</div>
     <script>
-        fetch('/health')
-            .then(response => response.json())
-            .then(data => {
-                const list = document.createElement('ul');
-                Object.entries(data).forEach(([key, value]) => {
-                    const li = document.createElement('li');
-                    li.textContent = key + ': ' + value;
-                    list.appendChild(li);
-                });
-                const healthDiv = document.getElementById('health');
-                healthDiv.innerHTML = '';
-                healthDiv.appendChild(list);
-            })
-            .catch(error => {
-                document.getElementById('health').textContent = 'Error: ' + error.message;
+        // Format timestamp as human-readable string
+        function formatTimestamp(date) {
+            const timeStr = date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
             });
+            const dateStr = date.toLocaleDateString();
+            return `Last checked: ${timeStr} on ${dateStr}`;
+        }
+
+        // Fetch health data and display it
+        function fetchHealthData() {
+            const refreshBtn = document.getElementById('refresh-btn');
+            const errorDiv = document.getElementById('error');
+            const healthDiv = document.getElementById('health');
+            const timestampDiv = document.getElementById('timestamp');
+
+            // Show loading state
+            refreshBtn.disabled = true;
+            errorDiv.textContent = '';
+            healthDiv.textContent = 'Loading...';
+
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    // Update timestamp
+                    const now = new Date();
+                    timestampDiv.textContent = formatTimestamp(now);
+
+                    // Create list of health data
+                    const list = document.createElement('ul');
+                    Object.entries(data).forEach(([key, value]) => {
+                        const li = document.createElement('li');
+                        li.textContent = key + ': ' + value;
+                        list.appendChild(li);
+                    });
+
+                    // Update health div
+                    healthDiv.innerHTML = '';
+                    healthDiv.appendChild(list);
+
+                    // Clear error message
+                    errorDiv.textContent = '';
+                })
+                .catch(error => {
+                    // Show error but preserve previous data if it exists
+                    const errorMsg = error.message || 'Unknown error';
+                    errorDiv.textContent = `Failed to fetch health data. Reason: ${errorMsg}. Check your connection and try again.`;
+
+                    // If no data has been loaded yet, show a message
+                    if (healthDiv.textContent === 'Loading...') {
+                        healthDiv.textContent = '';
+                    }
+                })
+                .finally(() => {
+                    // Re-enable refresh button
+                    refreshBtn.disabled = false;
+                });
+        }
+
+        // Attach click handler to refresh button
+        document.getElementById('refresh-btn').addEventListener('click', fetchHealthData);
+
+        // Fetch data on page load
+        fetchHealthData();
     </script>
 </body>
 </html>"""
