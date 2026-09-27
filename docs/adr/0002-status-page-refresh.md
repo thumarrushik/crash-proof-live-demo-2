@@ -24,44 +24,79 @@ GitHub Issue #38 requires:
 | Initial state | "Never checked", "Checking...", empty list | Empty list with "Loading..." | Matches current behavior |
 
 ## Design
+
+### Inventory & Hierarchy
+- **Component Library**: App has minimal styling; using semantic HTML (`<button>`, `<div>`, `<ul>`)
+- **Primary Action**: Refresh button (semantic `<button>` element)
+- **Secondary**: Timestamp and status title
+- **Tertiary**: Data list (existing structure preserved)
+
+### Layout
+```
+┌─────────────────────────────────┐
+│ Status        [Refresh Button]  │  <- header row
+│                                 │
+│ Last checked: 2:45:30 PM UTC   │  <- timestamp
+│ [Error message if fetch failed] │  <- error area
+│ • status: ok                    │  <- data list
+│ • version: 3.0.0               │
+│ ...                             │
+└─────────────────────────────────┘
+```
+
 ### Files to Modify
 - `app.py`: Update the HTML response for `/` to include JavaScript for handling refresh logic
 
 ### Component Structure
 The status page will:
 1. Show initial loading state on page load
-2. Fetch `/health` and display results with "Last checked: HH:MM:SS UTC"
-3. Display Refresh button that:
+2. Fetch `/health` and display results with "Last checked: HH:MM:SS" (local time)
+3. Display Refresh button (semantic `<button>`) that:
    - Fetches `/health` again on click
    - Is disabled during the fetch (loading state)
    - Shows loading state during fetch
 4. If fetch fails:
-   - Show error message at top
+   - Show error message at top (NN/g format: what happened + next action)
    - Keep previous good data visible
    - Enable refresh button for retry
 
-### Render States
-1. **Loading (initial)**: "Loading..." message, no button state changes
+### Render States (all four must have assertions)
+1. **Loading (initial)**: Show "Loading..." text, no data yet
 2. **Data**: Health data list + "Last checked" timestamp + enabled Refresh button
-3. **Error**: Error message + previous data list (if any) + enabled Refresh button
-4. **Empty**: Should not occur with this API, but handle gracefully
+3. **Error**: Error message ("Failed to fetch health data. Check your connection and try again.") + previous data list (if any) + enabled Refresh button
+4. **Empty**: Should not occur with this API (API always returns data), but handle gracefully with "No data available"
+
+### Accessibility
+- Use semantic `<button>` for refresh action
+- Button has visible label ("Refresh")
+- Button focus is visible (browser default or styled replacement)
+- Error message uses color (red) + text content (not color-only signal)
+- Timestamp is plain text (not color-only signal)
+- All elements reachable by keyboard
+- Target size: Refresh button >= 24px (padding adds to native button default)
 
 ### Data Flow
 ```
 Page Load
   ↓
-Fetch /health
+Show "Loading..." + fetch /health
   ↓ (success)
 Display data + timestamp + enable button
   ↓ (failure)
-Show error, keep previous data, enable button
+Show error, keep previous data (if any), enable button
   ↓
 User clicks Refresh
   ↓
-Disable button + show loading state
+Show loading state + disable button
   ↓
 Fetch /health (same as above)
 ```
+
+### Responsive Design
+- Single column layout (no horizontal scroll on 320px)
+- Relative units for spacing
+- Button and text reflow naturally
+- Timestamp inline with heading on desktop, wraps on mobile
 
 ## Implementation Strategy
 1. Modify the HTML in `app.py` root() function
@@ -74,11 +109,14 @@ Fetch /health (same as above)
 3. No backend changes needed (existing `/health` endpoint is sufficient)
 
 ## Decisions
-- Will use `new Date()` for timestamp formatting (human-readable in browser's locale)
-- Refresh button placed next to heading for prominence
-- Error message shown in red text at top
-- Button disabled state controlled via `disabled` attribute
-- All state managed in client-side JavaScript (no backend state needed)
+- **Timestamp format**: Using browser locale time format (`toLocaleTimeString()` + `toLocaleDateString()` or just time for brevity)
+- **Button placement**: Next to heading (h1) for prominence and easy discovery
+- **Error display**: Red text + error message text (not color-only; color + text is required by WCAG 1.4.1)
+- **Button element**: Using semantic `<button>` (not `<div onclick>`), with `disabled` attribute for disabled state
+- **State management**: All state managed in client-side JavaScript (no backend state needed)
+- **Data persistence**: Keep previous data on error (safe pattern, user knows fetch failed)
+- **Loading state**: Disable button + show loading text (no separate spinner, minimal changes)
+- **Time format**: Local time in HH:MM:SS format for clarity ("Last checked: 2:45:30 PM")
 
 ## Verification Plan
 - Unit tests (if applicable) for timestamp logic
