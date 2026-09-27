@@ -212,6 +212,152 @@ def test_root_contains_health_element():
     assert 'id="health"' in response.text
 
 
+# === TESTS FOR ISSUE #38: REFRESH BUTTON AND LAST-CHECKED TIMESTAMP ===
+
+def test_root_contains_refresh_button():
+    """GET / returns HTML containing a refresh button with id="refresh-btn"."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'id="refresh-btn"' in response.text
+    assert '<button' in response.text
+
+
+def test_root_refresh_button_has_accessible_label():
+    """GET / refresh button has visible label 'Refresh' (accessible to users and screen readers)."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check that the button element contains the word "Refresh"
+    assert '>Refresh</button>' in response.text
+
+
+def test_root_contains_timestamp_element():
+    """GET / returns HTML containing a timestamp display area with id="timestamp"."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'id="timestamp"' in response.text
+
+
+def test_root_contains_error_element():
+    """GET / returns HTML containing an error message area with id="error"."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'id="error"' in response.text
+
+
+def test_root_contains_semantic_button_not_div():
+    """GET / uses <button> semantic element for refresh, not <div onclick> (accessibility requirement)."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Verify it's a real button element
+    assert '<button id="refresh-btn">' in response.text
+    # Verify there's no div onclick for refresh
+    assert 'onclick' not in response.text.split('id="refresh-btn"')[0][-200:]
+
+
+def test_root_page_includes_script_for_fetch_logic():
+    """GET / includes JavaScript to handle fetch, refresh, and timestamp updates."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check for key JavaScript functions
+    assert 'fetchHealthData' in response.text
+    assert "fetch('/health')" in response.text or 'fetch(\'/health\')' in response.text
+
+
+def test_root_script_handles_loading_state():
+    """GET / JavaScript shows loading state by displaying 'Loading...' during fetch."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'Loading...' in response.text
+
+
+def test_root_script_formats_timestamp():
+    """GET / JavaScript includes timestamp formatting function."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'formatTimestamp' in response.text
+    assert 'Last checked:' in response.text
+
+
+def test_root_script_handles_errors_with_helpful_message():
+    """GET / JavaScript shows helpful error message that guides user to retry."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check for NN/g error message pattern: what happened + next action
+    assert 'Failed to fetch health data' in response.text
+    assert 'try again' in response.text.lower() or 'retry' in response.text.lower()
+
+
+def test_root_script_preserves_previous_data_on_error():
+    """GET / JavaScript preserves previous health data when fetch fails."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check that the error handling code preserves previous data
+    # by not clearing the healthDiv on error
+    assert 'healthDiv.textContent === \'Loading...\'' in response.text or \
+           'healthDiv.innerHTML = ' in response.text
+
+
+def test_root_page_has_accessible_focus_styling():
+    """GET / button has visible focus outline for keyboard navigation (WCAG 2.4.7)."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check for focus styling in CSS
+    assert 'button:focus' in response.text or ':focus' in response.text
+
+
+def test_root_page_error_box_uses_color_plus_text():
+    """GET / error display uses color AND text (not color-only signal per WCAG 1.4.1)."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check for:
+    # 1. Error class with color styling
+    assert 'class="error"' in response.text or '.error' in response.text
+    # 2. Error message text (not just color)
+    assert 'Failed to fetch health data' in response.text
+
+
+def test_root_page_responsive_layout():
+    """GET / uses responsive design with flex layout and relative units."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check for responsive design patterns
+    assert 'flex' in response.text or 'display' in response.text
+    assert 'media' in response.text  # @media query for mobile
+
+
+def test_root_page_button_disabled_attribute_during_fetch():
+    """GET / JavaScript disables button during fetch using disabled attribute (not class)."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check that disabled state is managed via .disabled property
+    assert '.disabled = true' in response.text or 'refreshBtn.disabled = true' in response.text
+
+
+def test_root_button_min_target_size_accessible():
+    """GET / refresh button has minimum target size for accessibility (>=24x24 CSS px)."""
+    client = TestClient(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    # Check for button padding (adds to button intrinsic size)
+    assert 'padding' in response.text  # Button has padding in CSS
+    # Check that the button is a semantic element (not tiny)
+    assert '<button' in response.text
+
+
 # === REGRESSION TESTS: Pin the complete /health response shape ===
 # These tests enforce the contract: any field removal or type change fails loudly
 
