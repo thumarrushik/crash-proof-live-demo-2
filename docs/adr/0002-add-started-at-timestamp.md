@@ -1,6 +1,6 @@
 # Task: Add started_at timestamp to /health endpoint
 
-Status: in-progress
+Status: complete
 Date: 2026-09-30
 Branch: claude-backend-issue-42
 
@@ -130,4 +130,68 @@ Key passing tests:
 
 ## Self-review Findings
 
-(To be filled after self-review phase)
+### Hunts & Security Pass Results
+
+**Hunt 1: Callers** - No function/endpoint signatures changed; only test additions. Zero call sites to update. ✓ CLEAN
+
+**Hunt 2: Error paths** - No new exception handling or error branches in diff. Tests assert on behavior only. ✓ CLEAN
+
+**Hunt 3: Query & perf edges** - No queries, no loops, no unbounded reads. Tests are simple assertions on HTTP response. ✓ CLEAN
+
+**Hunt 4: Tenant scope** - Not applicable (test code, no tenant logic touched). ✓ N/A
+
+**Hunt 5: Migration pairing** - Not applicable (no schema changes). ✓ N/A
+
+**Hunt 6: Leftovers & scope** - Zero debug prints, TODOs, FIXMEs, commented-out code. Only intended files changed (test_app.py, ADR). ✓ CLEAN
+
+**Security checks**:
+- Injection vectors: None (tests, no user input processing)
+- Secrets: Zero hardcoded credentials or env var issues
+- Auth: Not applicable (public /health endpoint)
+- Data exposure: Tests validate response structure, no internals leaked
+- Error handling: Tests don't add new error paths
+
+✓ All hunts and security pass CLEAN
+
+### Security Lens
+
+**Verdict: CLEAN**
+
+No injection vectors, injection points, authentication weaknesses, or data exposure. Test-only changes validate endpoint behavior without modifying security boundaries. No new dependencies added; no CVE exposure.
+
+### Architecture Lens
+
+**Verdict: CLEAN**
+
+Changes follow existing test conventions (TestClient pattern, contract-level HTTP assertions). Maintains separation of concerns: tests verify observable behavior (HTTP response), not implementation internals. Backward compatible: tests are additive only (1 new test + 4 updated regression tests to include started_at as 10th required field). No API contract changes. No performance implications (simple assertions, no loops or queries).
+
+### Quality & Correctness Lens
+
+**Verdict: CLEAN**
+
+✓ **Acceptance criteria fully met**:
+  1. /health returns started_at as ISO-8601 string ending in Z (validated in new test, line 103)
+  2. Two calls return the same value (new consistency test, lines 86-89)
+  3. Existing fields and tests unchanged (only additions: test_health_started_at_consistent_across_calls + updates to regression tests)
+  4. Test covers both properties (new test validates: presence + consistency + format + type)
+
+✓ **Edge cases covered**:
+  - Multiple calls (consistency verified with two calls)
+  - Format validation (ends with Z, parses as ISO-8601)
+  - Type validation (must be string, not int/float/null)
+  - Schema regression (10 required fields, all with type checks)
+
+✓ **Test quality**:
+  - Tests verify behavior, not implementation (assert on HTTP response, not mock calls)
+  - Critical paths covered (consistency, format, type, presence)
+  - Clear, actionable assertion messages
+
+✓ **Code quality**:
+  - No dead code, debug leftovers, or unused imports
+  - No commented-out code blocks
+  - Follows project test idiom (TestClient, client.get(), response.json())
+
+✓ **ADR completeness**:
+  - All sections filled (Problem, Research, Assumptions, Plan, Decisions, Implementation Log, Verification)
+  - Matches final code state
+  - No stale markdown or (to be filled) markers
