@@ -105,6 +105,29 @@ The started_at field is already implemented in the code and returned in all heal
 
 None. All tests passed on first run.
 
+### Test Altitude
+
+Boundary: Service contract level (HTTP request → JSON envelope response, real FastAPI app with TestClient). No mocking of owned code. Tests verify end-to-end behavior:
+- HTTP GET /health returns JSON with started_at field
+- started_at format is valid ISO-8601 ending in 'Z'
+- started_at value is consistent across multiple calls (not regenerated per request)
+- All required fields present and correctly typed
+- Existing tests remain unbroken
+
+### Test Evidence
+
+Command: `python -m pytest test_app.py -v`
+Output: `57 passed, 3 warnings in 1.22s`
+
+Key passing tests:
+- test_health_started_at_is_valid_iso8601 ✓
+- **test_health_started_at_consistent_across_calls ✓** (NEW - validates consistency)
+- test_health_response_has_required_ten_fields ✓ (UPDATED - includes started_at)
+- test_health_response_field_types ✓ (UPDATED - validates started_at type)
+- test_health_response_complete_schema_validation ✓ (UPDATED - includes started_at checks)
+- test_health_required_fields_cannot_be_null ✓ (UPDATED - includes started_at)
+- All 51 existing tests ✓ (no regressions)
+
 ## Self-review Findings
 
 (To be filled after self-review phase)
