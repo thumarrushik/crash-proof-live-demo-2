@@ -32,16 +32,24 @@ No new packages or services required. Project uses FastAPI and pytest (already i
 
 ## Plan
 
-1. **Verify current implementation** (DONE): Started_at is already computed once at startup and included in responses
-2. **Add consistency test**: Create test_health_started_at_consistent_across_calls() that calls /health twice and asserts both return same started_at
-3. **Update regression tests**: Add started_at to required fields in test_health_response_has_required_nine_fields() (should be 10 now)
-4. **Update type checks**: Add type validation for started_at (must be string, ISO-8601 format ending in Z)
-5. **Run full test suite** to ensure no regressions
-6. **Verify with both acceptance criteria**:
-   - ✓ /health returns started_at as ISO-8601 string ending in Z
-   - ✓ Two calls return same value (new test)
-   - ✓ Existing fields/tests unchanged (only adding, not modifying existing)
-   - ✓ Test covers both properties (consistency test)
+**Classification**: This change is pure test improvement. No endpoint modifications, no schema/migration changes. Test-only work.
+
+**Files to modify**: 
+- `test_app.py`: Add consistency test, update regression test suite
+
+**Scope of changes**:
+1. Add `test_health_started_at_consistent_across_calls()` - new test that calls /health twice and validates started_at is identical both times (addresses acceptance "two calls return the same value")
+2. Update `test_health_response_has_required_nine_fields()` - add started_at to required_fields set (9 → 10 fields)
+3. Update `test_health_response_field_types()` - add type validation for started_at (must be str, ISO-8601 format ending in Z)
+4. Update `test_health_response_complete_schema_validation()` - add started_at validation block matching others
+5. Update field count comments from "9" to "10" in relevant test docstrings
+
+**Why this approach**:
+- Minimal, focused changes to test suite only
+- Started_at implementation is already correct; no code changes needed to app.py
+- New consistency test directly addresses acceptance criteria: "two calls return the same value"
+- Regression tests updated to include started_at in contract validation
+- All changes are additive to test coverage, no existing tests removed
 
 ## Decisions Made
 
