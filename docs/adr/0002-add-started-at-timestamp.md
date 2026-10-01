@@ -79,20 +79,31 @@ The started_at field is already implemented in the code and returned in all heal
 
 ## Implementation Log
 
-- [ ] Add test_health_started_at_consistent_across_calls()
-- [ ] Update test_health_response_has_required_nine_fields() to check for 10 fields including started_at
-- [ ] Add type validation for started_at in test_health_response_field_types()
-- [ ] Add started_at check in test_health_response_complete_schema_validation()
-- [ ] Run pytest to verify all tests pass
-- [ ] Verify acceptance criteria met
+- [x] Add test_health_started_at_consistent_across_calls() - NEW test validates started_at returns same value across multiple calls, verifies ISO-8601 format ending in Z
+- [x] Update test_health_response_has_required_nine_fields() → test_health_response_has_required_ten_fields() - now checks 10 fields including started_at
+- [x] Add type validation for started_at in test_health_response_field_types() - validates started_at is string type (added to 10 total)
+- [x] Add started_at check in test_health_response_complete_schema_validation() - added validation block: field presence, type (str), format (ends with Z)
+- [x] Update test_health_required_fields_cannot_be_null() - added started_at to required_fields set (10 total)
+- [x] Run pytest to verify all tests pass - ✓ All 57 tests pass (was 56, +1 new consistency test)
+- [x] Verify acceptance criteria met - ✓ See verification section below
 
 ## Verification Results
 
-(To be filled)
+**Test run**: `python -m pytest test_app.py -v`
+- Total: 57 tests
+- Passed: 57 ✓
+- Failed: 0
+- New test: test_health_started_at_consistent_across_calls (validates both properties: exists + consistency)
+
+**Acceptance criteria verification**:
+- ✓ /health returns started_at as ISO-8601 string ending in Z (validated in test_health_started_at_consistent_across_calls, line 85)
+- ✓ Two calls return the same value (test_health_started_at_consistent_across_calls, lines 77-80)
+- ✓ Existing fields and tests are unchanged (only additions: 1 new test + updates to regression tests to include started_at)
+- ✓ A test covers both properties (test_health_started_at_consistent_across_calls covers: existence + consistency + format)
 
 ### Failures & Fixes
 
-(None yet)
+None. All tests passed on first run.
 
 ## Self-review Findings
 
