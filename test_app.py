@@ -77,6 +77,35 @@ def test_health_started_at_is_valid_iso8601():
     assert isinstance(parsed_time, datetime)
 
 
+def test_health_started_at_consistent_across_calls():
+    """GET /health returns the same started_at value on multiple calls (computed once at startup)."""
+    client = TestClient(app)
+
+    # First call
+    response1 = client.get("/health")
+    data1 = response1.json()
+    started_at1 = data1["started_at"]
+
+    # Second call
+    response2 = client.get("/health")
+    data2 = response2.json()
+    started_at2 = data2["started_at"]
+
+    # Both must be identical (started_at is computed once, not per-request)
+    assert started_at1 == started_at2, (
+        f"started_at should be consistent across calls, but got {started_at1} != {started_at2}"
+    )
+
+    # Verify format: ISO-8601 string ending in Z
+    assert isinstance(started_at1, str), f"started_at must be string, got {type(started_at1)}"
+    assert started_at1.endswith("Z"), f"started_at must end with 'Z', got {started_at1}"
+
+    # Verify it parses as valid ISO-8601
+    iso_str = started_at1.rstrip("Z")
+    parsed_time = datetime.fromisoformat(iso_str)
+    assert isinstance(parsed_time, datetime)
+
+
 def test_health_returns_version_field():
     """GET /health returns status=ok and version=3.0.0 fields."""
     client = TestClient(app)
@@ -216,14 +245,14 @@ def test_root_contains_health_element():
 # These tests enforce the contract: any field removal or type change fails loudly
 
 
-def test_health_response_has_required_nine_fields():
-    """GET /health response contains all 9 required fields: status, version, python, uptime_seconds, checks_passed, env, service, hostname, pid."""
+def test_health_response_has_required_ten_fields():
+    """GET /health response contains all 10 required fields: status, version, started_at, python, uptime_seconds, checks_passed, env, service, hostname, pid."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    # Verify all 9 required fields are present
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
+    # Verify all 10 required fields are present
+    required_fields = {"status", "version", "started_at", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
     present_fields = set(data.keys())
 
     assert required_fields.issubset(present_fields), (
@@ -233,14 +262,15 @@ def test_health_response_has_required_nine_fields():
 
 
 def test_health_response_field_types():
-    """GET /health response has correct types for all 9 required fields."""
+    """GET /health response has correct types for all 10 required fields."""
     client = TestClient(app)
     response = client.get("/health")
     data = response.json()
 
-    # Type checks for all 9 required fields
+    # Type checks for all 10 required fields
     assert isinstance(data["status"], str), f"status must be str, got {type(data['status']).__name__}"
     assert isinstance(data["version"], str), f"version must be str, got {type(data['version']).__name__}"
+    assert isinstance(data["started_at"], str), f"started_at must be str, got {type(data['started_at']).__name__}"
     assert isinstance(data["python"], str), f"python must be str, got {type(data['python']).__name__}"
     assert isinstance(data["uptime_seconds"], (int, float)), (
         f"uptime_seconds must be int or float, got {type(data['uptime_seconds']).__name__}"
@@ -410,7 +440,7 @@ def test_health_required_fields_cannot_be_null():
     response = client.get("/health")
     data = response.json()
 
-    required_fields = {"status", "version", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
+    required_fields = {"status", "version", "started_at", "python", "uptime_seconds", "checks_passed", "env", "service", "hostname", "pid"}
     for field in required_fields:
         assert data[field] is not None, f"Required field '{field}' must not be null"
 
@@ -434,6 +464,13 @@ def test_health_response_complete_schema_validation():
         schema_errors.append("Missing field: version")
     elif not isinstance(data["version"], str):
         schema_errors.append(f"Field 'version' has wrong type: {type(data['version']).__name__}, expected str")
+
+    if "started_at" not in data:
+        schema_errors.append("Missing field: started_at")
+    elif not isinstance(data["started_at"], str):
+        schema_errors.append(f"Field 'started_at' has wrong type: {type(data['started_at']).__name__}, expected str")
+    elif not data["started_at"].endswith("Z"):
+        schema_errors.append(f"Field 'started_at' must be ISO-8601 format ending with 'Z', got {data['started_at']}")
 
     if "python" not in data:
         schema_errors.append("Missing field: python")
