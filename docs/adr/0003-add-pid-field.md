@@ -49,6 +49,14 @@ No new packages needed. Existing dependencies:
 - pytest (for testing)
 - Python standard library: os module
 
+## Classification
+
+**Category:** Served endpoint (GET /health) - additive field already in place
+**Contract:** API contract verification - no breaking changes, field already returned by _get_health_status()
+**Change type:** Verification-only - feature is already implemented and tested
+
+Since the pid field is already present in the /health, /livez, and /readyz endpoints and covered by comprehensive tests, this task is a verification that the implementation meets the issue's acceptance criteria. No code changes are required.
+
 ## Plan
 
 No code changes required. The feature is already fully implemented:
